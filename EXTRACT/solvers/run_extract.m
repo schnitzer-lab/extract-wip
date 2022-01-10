@@ -36,7 +36,7 @@ config.avg_event_tau = tau;
 
 % Space downsampling
 dss = config.downsample_space_by;
-if strcmp(dss, 'auto')
+if strcmp(dss, 'auto') || isempty(dss)
     dss = max(round(config.avg_cell_radius ...
         / config.min_radius_after_downsampling), 1);
 end
@@ -55,10 +55,13 @@ script_log = [script_log, str];
 dispfun(str, config.verbose ==2);
 [M, config] = preprocess_movie(M, config);
 max_image = max(M, [], 3);
+clims_visualize = quantile(max_image(:), [config.visualize_cellfinding_min config.visualize_cellfinding_max]);
+
+
 
 % Time downsampling
 dst = config.downsample_time_by;
-if strcmp(dst, 'auto')
+if strcmp(dst, 'auto') || isempty(dst)
     dst = max(round(tau / config.min_tau_after_downsampling), 1);
 end
 config.downsample_time_by = dst;
@@ -363,6 +366,39 @@ for iter = 1:config.max_iter
 	break
     end
 
+    if( ismember(iter,config.num_iter_stop_quality_checks))
+
+        if (iter == config.max_iter)
+            [classification] = classification_hyperparameters(...
+                classification, S, S_smooth, T, M, S_surround, T_corr_in, T_corr_out, fov_size, round(avg_radius), ...
+                config.use_gpu);
+        end
+
+        if config.verbose == 2
+            fprintf(repmat('\b', 1, last_size));
+            str = sprintf('\t \t \t End of iter # %d: # cells: %d (no quality checks) \n', ...
+                iter, size(T, 1));
+            last_size = length(str);
+            script_log = [script_log, str];
+            dispfun(str, config.verbose ==2);
+        end
+
+        if config.visualize_cellfinding
+            
+            subplot(121)
+            clf
+            
+            imshow(max_image,clims_visualize)
+            
+            plot_cells_overlay(reshape(gather(S),fov_size(1),fov_size(2),size(S,2)),[0,1,0],[])
+            title(['Cell refinement step: ' num2str(iter) ' # Cells: ' num2str(size(T,1)) ' # Removed: 0'  ])
+            drawnow;
+        end
+
+        continue
+
+    end
+
     %---
     % Remove redundant cells
     %---
@@ -386,6 +422,7 @@ for iter = 1:config.max_iter
         % Delete bad cells
         S_bad = [S(:, is_bad), S_bad];
         T_bad = [T(is_bad, :); T_bad];
+
         [S, S_smooth] = delete_columns(is_bad, S, S_smooth);
         [T, T_change, S_change] = delete_rows(is_bad, T, T_change, S_change);
         if config.verbose == 2
@@ -395,6 +432,15 @@ for iter = 1:config.max_iter
             last_size = length(str);
             script_log = [script_log, str];
             dispfun(str, config.verbose ==2);
+        end
+        if config.visualize_cellfinding
+            
+            subplot(121)
+            clf
+            imshow(max_image,clims_visualize)
+            plot_cells_overlay(reshape(gather(S),fov_size(1),fov_size(2),size(S,2)),[0,1,0],[])
+            title(['Cell refinement step: ' num2str(iter) ' # Cells: ' num2str(size(T,1)) ' # Removed: ' num2str(sum(is_bad)) ])
+            drawnow;
         end
     end
     if config.smooth_S, S = S_smooth; end
@@ -430,6 +476,26 @@ switch config.trace_output_option
         [T, ~, ~, ~, ~] = solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
             kappa, config.max_iter_T, config.TOL_sub, ...
             config.plot_loss, @fp_solve, config.use_gpu, 1);
+
+    case 'baseline_adjusted'
+        str = sprintf('\t \t \t Providing baseline adjusted traces. \n');
+        script_log = [script_log, str];
+        dispfun(str, config.verbose ==2);
+        
+        if config.l1_penalty_factor > ABS_TOL
+            % Penalize according to temporal overlap with neighbors
+            cor = get_comp_corr(S, T);
+            lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
+                * config.l1_penalty_factor;
+        else
+            lambda = T(:, 1)' * 0;
+        end
+        
+        [T, ~, ~, ~, ~] = solve_T_robust(T, S, Mt, fov_size, avg_radius, lambda, ...
+            kappa, config.max_iter_T, config.TOL_sub, ...
+            config.plot_loss, config.trace_quantile, config.use_gpu, 1);
+
+        T = T - min(T,[],2);
             
     case 'nonneg'
         str = sprintf('\t \t \t Providing non-negative traces. \n');
@@ -512,6 +578,8 @@ if dss > 1
     % Upsample summary_image & max_image
     summary_image = interp2(X, Y, summary_image, Xq, Yq, 'spline');
     max_image = interp2(X, Y, max_image, Xq, Yq, 'spline');
+    config.F_per_pixel = interp2(X, Y, config.F_per_pixel , Xq, Yq, ...
+                'spline');
     if ~isempty(S)
         num_components = size(S, 2);
         S_3d = reshape(S, fov_size(1), fov_size(2), num_components);

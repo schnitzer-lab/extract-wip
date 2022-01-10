@@ -42,11 +42,46 @@ switch config.cellfind_filter_type
         moving_rad=max(floor(config.moving_radius),2);
         X=ones(moving_rad,moving_rad,1)/(moving_rad^2); 
         M=convn(M,X,'same');
+    case 'median'
+        M= medfilt3(M);
     case 'none'
     otherwise
         error('Filter type not supported.');
 end
 
+
+if config.visualize_cellfinding
+    is_bad=1;
+    
+    str = sprintf('\t \t \t Using cell finding visualization tool...\n');
+    dispfun(str, config.verbose ==2);
+    
+    max_im = max(M,[],3);
+
+
+    trace_snr_all = [];
+    mov_snr_all = [];
+    
+    subplot(121)
+    if config.visualize_cellfinding_full_range
+        imshow(max_im,[ ])
+    else
+        clims = quantile(max_im(:), [config.visualize_cellfinding_min config.visualize_cellfinding_max]);
+        imshow(max_im,clims)
+    end
+    drawnow;
+    subplot(222)
+    histogram(trace_snr_all)
+    xlabel('Trace snr')
+    ylabel('Number of cells')
+    drawnow;
+    subplot(224)
+    histogram(mov_snr_all)
+    xlabel('cellfind min snr')
+    ylabel('Number of cells')
+    drawnow;
+    
+end
 
 % Flatten for subsequent processing
 M = reshape(M, h * w, n);
@@ -124,6 +159,13 @@ end
 
 num_good_cells = 0;
 for i = 1:max_steps
+    if (config.visualize_cellfinding && i>1 && ~is_bad)
+        
+            subplot(121)
+            plot_cells_overlay(reshape(gather(s),h,w),[0,1,0],[])
+            drawnow;
+        
+    end
     % Select seed pixel for next init cell
     mod_im_summary = modify_summary_image(summary_stack(:, 1), h, w, ...
         min_magnitude, elim_size_thresh);
@@ -147,6 +189,9 @@ for i = 1:max_steps
     s_2d_init = reshape(s_init, h, w);
     s_2d_init = single(s_2d_init);
     s_2d_init = maybe_gpu(use_gpu, s_2d_init);
+
+    
+
 
     % Robust cell finding
     [s, t, t_corr, s_corr, s_change, t_change] = ...
@@ -196,6 +241,8 @@ for i = 1:max_steps
         pause;
     end
 
+    
+
     % Subtract s * t
     idx_s = find(s_corr > 0);
     idx_t = find(t_corr > 0);
@@ -215,12 +262,44 @@ for i = 1:max_steps
         summary_stack(pix_idx, 1) = summary_stack(pix_idx, 1) * 0;
         T_trash(i, :) = gather(t);
         S_trash(:, i) = gather(s);
+
+        if config.visualize_cellfinding 
+            if config.visualize_cellfinding_show_bad_cells
+
+                
+                subplot(121)
+                plot_cells_overlay(reshape(gather(s),h,w),[1,0,0],[])
+                title(['Cell finding in process. ' num2str(i) ' iterations ' num2str(num_good_cells) ' found.'])
+                drawnow;
+            end
+    
+        end
+
     else
         num_good_cells = num_good_cells + 1;
         is_good(i) = true;
         vals_max = [vals_max, val_max];
         T(i, :) = gather(t);
         S(:, i) = gather(s);
+        if config.visualize_cellfinding
+
+            trace_snr_all = [trace_snr_all, gather(trace_snr)];
+            mov_snr_all = [mov_snr_all, gather(max_t/noise_std - bias_func(config.cellfind_kappa_std_ratio))];
+
+            subplot(121)
+            plot_cells_overlay(reshape(gather(s),h,w),[1,0,0],[])
+            title(['Cell finding in process. ' num2str(i) ' iterations ' num2str(num_good_cells) ' found.'])
+            drawnow;
+            subplot(222)
+            histogram(trace_snr_all,ceil(i/10))
+            xlabel('Trace snr')
+            drawnow;
+            subplot(224)
+            histogram(mov_snr_all,ceil(i/10))
+            xlabel('cellfind min snr')
+            drawnow;
+    
+        end
     end
     
     % Stopping criterion based on the running yield of cells
@@ -228,6 +307,13 @@ for i = 1:max_steps
     avg_yield = mean(is_good(max(1, i-n+1):i));
     if i > 2 * n && avg_yield <= avg_yield_threshold
         init_stop_reason = 'yield';
+        if (config.visualize_cellfinding && i>1 && ~is_bad)
+        
+            subplot(121)
+            plot_cells_overlay(reshape(gather(s),h,w),[0,1,0],[])
+            drawnow;
+        
+        end
         break;
     end
     
@@ -236,6 +322,13 @@ for i = 1:max_steps
             i, num_good_cells), config.verbose == 2);
     end
 end
+
+if config.visualize_cellfinding
+    subplot(121)
+    title(['Cell finding completed. ' num2str(i) ' iterations ' num2str(num_good_cells) ' found.'])
+    drawnow;
+end
+
 % Organize S & T matrices
 S = S(:, is_good);
 T = T(is_good, :);
