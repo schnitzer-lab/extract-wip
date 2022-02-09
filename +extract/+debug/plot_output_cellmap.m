@@ -52,14 +52,14 @@ if include_bad_cells > 0
         S_bad = zeros(h*w, size(S_bad_small, 2));
         S_bad(output.info.summary(i_part).fov_occupation(:), :) = S_bad_small;
         ims_bad = reshape(S_bad, h, w, size(S_bad, 2));
-        plot_cells_overlay(ims_bad(:, :, idx_bad), 'r', []);
+        extract.debug.plot_cells_overlay(ims_bad(:, :, idx_bad), 'r', []);
         num_bad_cells = num_bad_cells + length(idx_bad);
     end
     fprintf('Plotting good cells...\n');
-    plot_cells_overlay(output.spatial_weights, 'g', []);
+    extract.debug.plot_cells_overlay(output.spatial_weights, 'g', []);
     title_str = sprintf(' \n# eliminated cells: %d', num_bad_cells);
 else
-    plot_cells_overlay(output.spatial_weights, [0, 0.7, 0.1], 0.5);
+    extract.debug.plot_cells_overlay(output.spatial_weights, [0, 0.7, 0.1], 0.5);
 end
 title_str = [sprintf('# output cells: %d    ', size(output.spatial_weights, 3)),...
     title_str];

@@ -30,7 +30,7 @@ config.max_iter = 0;
 M_extract = M;
 profile off;
 profile on;
-output = extractor(M_extract, config);
+output = extract.solvers.extractor(M_extract, config);
 % profile viewer;
 profile off;
 [d1, d2, d3] = size(output.spatial_weights);
@@ -42,7 +42,7 @@ imagesc(max(M_extract, [], 3), [0, 0.2]);
 axis image;
 colormap bone;
 % plot_cells_overlay(reshape(F_ground, h, w, size(F_ground, 2)), 'g')
-plot_cells_overlay(output.spatial_weights);
+extract.debug.plot_cells_overlay(output.spatial_weights);
 
 %% save to rec for classification
 filters = double(output.spatial_weights);
@@ -56,7 +56,7 @@ ds = DaySummary('', '');
 %% Run initialization
 M_init = M;
 
-[S, T, S_trash, T_trash, maxes] = cw_EXTRACT(M_init, config, F_ground);
+[S, T, S_trash, T_trash, maxes] = extract.solvers.cw_EXTRACT(M_init, config, F_ground);
 
 figure(1);
 imagesc(max(M_init, [], 3));
@@ -65,6 +65,6 @@ colormap bone;
 hold on
 scatter(maxes(2,:),maxes(1,:))
 hold off
-plot_cells_overlay(reshape(F_ground, h, w, size(F_ground, 2)), 'g');
-plot_cells_overlay(reshape(S, h, w, size(S, 2)), 'w');
+extract.debug.plot_cells_overlay(reshape(F_ground, h, w, size(F_ground, 2)), 'g');
+extract.debug.plot_cells_overlay(reshape(S, h, w, size(S, 2)), 'w');
 

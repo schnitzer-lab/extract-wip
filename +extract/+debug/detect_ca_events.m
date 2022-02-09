@@ -34,7 +34,7 @@ thresh1 = threshold *max(smooth_trace);% mad(diff_trace(diff_trace>0),1);;
 thresh2 = threshold *max(diff_trace);
 warning off;
 % [~,event_frames] = findpeaks(smooth_trace,'minpeakheight',thresh1);
-[event_frames, ~] = peakseek(smooth_trace, 10, thresh1);
+[event_frames, ~] = extract.helpers.peakseek(smooth_trace, 10, thresh1);
 warning on;
 % Filter by diff
 % diff_at_peaks = diff_trace(event_frames);

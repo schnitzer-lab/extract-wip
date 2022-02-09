@@ -23,11 +23,11 @@ function plot_bad_cells(output, idx_partition, idx_iter)
     for i = 1:size(S_bad, 2)
         im = ims_bad(:, :, i);
         if sum(im(:)) > 0
-            [x_range, y_range] = get_image_xy_ranges(im, ex);
+            [x_range, y_range] = extract.helpers.get_image_xy_ranges(im, ex);
             im_small = im(y_range(1):y_range(2), x_range(1):x_range(2));
             subplot(1,4,1);
             imagesc(im_small); axis image; colormap jet;
-            title(sprintf('spat corr: %.2f, is-s-bad: %d', spat_corruptions(i), is_s_bad(i)));
+            title(sprintf('spat corr: %.2f, is-s-bad: %d', extract.helpers.spat_corruptions(i), is_s_bad(i)));
             subplot(1,4, [2,3,4]);
             plot(T_bad(i, :));
             title(sprintf('trace snr: %.1f, is-t-bad: %d', trace_snrs(i), is_t_bad(i)));

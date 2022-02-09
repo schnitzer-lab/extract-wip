@@ -5,6 +5,6 @@ function [T_ls, T_neuropil] =  get_T_ls(M, ims)
     T_ls = pinv(S) * Md;
     
     % Get neuropil activity
-    S_surround = get_S_surround(S, [h, w], 0.5);
+    S_surround = extract.debug.get_S_surround(S, [h, w], 0.5);
     T_neuropil = pinv(S_surround) * Md;
 end

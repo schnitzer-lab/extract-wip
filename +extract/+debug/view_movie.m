@@ -61,7 +61,7 @@ colormap(ax, color_map);
 if cellmap_overlay
     hold(ax, 'on');
     %plot_cell_images(ax, ims, colors, colors);
-    plot_cells_overlay(ims,colors,[]);
+    extract.debug.plot_cells_overlay(ims,colors,[]);
     hold(ax, 'off');
 end
 

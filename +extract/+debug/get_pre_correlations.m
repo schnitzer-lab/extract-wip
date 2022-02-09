@@ -6,11 +6,11 @@ function [T_corr_in, T_corr_out, S_surround,S_smooth] = get_pre_correlations(S, 
     M=(M-X)./X;
 
     fov_size=[nx,ny];
-    S_smooth = smooth_images(S, fov_size,...
+    S_smooth = extract.helpers.smooth_images(S, fov_size,...
         round(avg_radius / 2), 0, true);
-    S_smooth = normalize_to_one(S_smooth);
+    S_smooth = extract.helpers.normalize_to_one(S_smooth);
 
-    mask = make_mask(single(S_smooth > 0.1),fov_size, round(avg_radius ));
+    mask = extract.helpers.make_mask(single(S_smooth > 0.1),fov_size, round(avg_radius ));
 
     
     M = reshape(M,nx*ny,nt);
@@ -30,7 +30,7 @@ function [T_corr_in, T_corr_out, S_surround,S_smooth] = get_pre_correlations(S, 
     w = fov_size(2);
     
     % Subtract trace noise from traces to avoid potential side-effects
-    T_noise_limit = sqrt(2)*3*estimate_noise_std(T);
+    T_noise_limit = sqrt(2)*3*extract.helpers.estimate_noise_std(T);
     T = max(0, bsxfun(@minus, T, T_noise_limit));
 
     % Decide on space partitions
@@ -42,9 +42,9 @@ function [T_corr_in, T_corr_out, S_surround,S_smooth] = get_pre_correlations(S, 
     idx_S_nonzero = find(sum(mask, 2) > 0);
     % Solve for S in multiple sub-problems
     for i_x = 1:np_x
-        idx_x = select_indices(w, np_x, i_x);
+        idx_x = extract.helpers.select_indices(w, np_x, i_x);
         for i_y = 1:np_y
-            idx_y = select_indices(h, np_y, i_y);
+            idx_y = extract.helpers.select_indices(h, np_y, i_y);
             % convert space indices from 2d to 1d
             [sub_x, sub_y] = meshgrid(idx_x, idx_y);
             idx_space = sort(sub2ind(fov_size, sub_y(:), sub_x(:)));
@@ -81,6 +81,6 @@ function [T_corr_in, T_corr_out, S_surround,S_smooth] = get_pre_correlations(S, 
     T_corr_in = Tt_corr_in';
     T_corr_out = Tt_corr_out';
     % Ensure correct scaling of images
-    [S_out, scale_s] = normalize_to_one(S_out);
+    [S_out, scale_s] = extract.helpers.normalize_to_one(S_out);
     T_corr_in = bsxfun(@times, T_corr_in, scale_s');
 end

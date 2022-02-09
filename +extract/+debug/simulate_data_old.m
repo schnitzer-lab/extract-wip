@@ -133,7 +133,7 @@ function[M,F_mat,T_mat,event_times, cents] = simulate_data(...
 
     function noise = make_correlated_noise(noise_std, radius, tau)
         noise = randn(h,w,t);
-        noise = spatial_bandpass(noise, radius, 2,2, 1);
+        noise = extract.helpers.spatial_bandpass(noise, radius, 2,2, 1);
         noise = reshape(noise, h*w, t);
         noise = conv2(1, exp(-(1:(tau*5))/tau), noise, 'same');
         noise = noise/std(noise(:)) * noise_std;

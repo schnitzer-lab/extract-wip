@@ -21,9 +21,9 @@ cell_images_2d = reshape(cell_images, h * w, k);
 if is_ndSparse
     cell_images_2d = full(cell_images_2d);
 end
-cell_images_2d = smooth_images(cell_images_2d, [h, w], 4, 0);
+cell_images_2d = extract.helpers.smooth_images(cell_images_2d, [h, w], 4, 0);
 if is_ndSparse
-    cell_images_2d = ndSparse(cell_images_2d);
+    cell_images_2d = extract.helpers.ndSparse(cell_images_2d);
 end
 cell_images = reshape(cell_images_2d, h, w, k);
 
