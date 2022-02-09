@@ -144,7 +144,7 @@ if config.crop_circular
     if ischar(M)
         error('To use the circular cropping feature, load the movie onto memory before calling EXTRACT.');
     else
-        circular_mask = get_circular_mask(M);
+        circular_mask = extract.helpers.get_circular_mask(M);
         if isempty(config.movie_mask)
         	config.movie_mask = circular_mask;
         else
@@ -235,7 +235,7 @@ T = cell2mat(T(~cellfun(@isempty, T)));
 summary = [summary{~cellfun(@isempty, summary)}];
 
 try
-    [cellcheck] = combine_metrics(summary);
+    [cellcheck] = extract.helpers.combine_metrics(summary);
 catch
     %warning('cellcheck classification metrics have an issue 1/3.')
 end
@@ -286,7 +286,7 @@ end
 
 if config.use_sparse_arrays
     % There are no 3-D sparse arrays -- use a FileExchange fn for storing
-    S = ndSparse(S);
+    S = extract.helpers.ndSparse(S);
 end
 output.spatial_weights = reshape(S, h, w, size(S, 2));
 output.temporal_weights = T;

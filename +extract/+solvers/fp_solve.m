@@ -3,7 +3,7 @@ function [X,loss] = fp_solve(X,A,B, mask, lambda, kappa, nIter, tol, compute_los
 eo2 = kappa / 2;
 et2 = 1 / kappa / 2;
 
-[X, A, B] = maybe_gpu(use_gpu, X, A, B);
+[X, A, B] = extract.helpers.maybe_gpu(use_gpu, X, A, B);
 
 if ~transpose_B
     B = B';
@@ -12,7 +12,7 @@ A = A';
 X = X';
 lambda = lambda';
 
-I = maybe_gpu(use_gpu, eye(size(A,2),'single'));
+I = extract.helpers.maybe_gpu(use_gpu, eye(size(A,2),'single'));
 Ac = A'*A;
 
 iAc = (Ac)\I;
@@ -20,7 +20,7 @@ pA = iAc*A';
 decay = iAc*lambda;%*mu;
 X_ls = pA*B;
 
-loss = maybe_gpu(use_gpu, zeros(1,nIter,'single'));
+loss = extract.helpers.maybe_gpu(use_gpu, zeros(1,nIter,'single'));
 
 
 for k = 1:nIter    

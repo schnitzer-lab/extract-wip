@@ -3,7 +3,7 @@ function [s, t, t_corr, s_corr, s_change, t_change] = ...
 
 [h, w] = size(f_2d_init);
 
-s_blank = maybe_gpu(use_gpu, zeros(h * w, 1, 'single'));
+s_blank = extract.helpers.maybe_gpu(use_gpu, zeros(h * w, 1, 'single'));
 
 n_iter_in = 10;
 n_iter_out =10;
@@ -31,25 +31,25 @@ for i = 1:n_iter_out
     % T update
     s_sub = s(is_s);
     lambda = sum(s_sub) * scale_lambda;
-    t = solve_single_source_adaptive(s_sub, M_sub, n_iter_in, lambda, noise_std, kappa_t);
+    t = extract.solvers.solve_single_source_adaptive(s_sub, M_sub, n_iter_in, lambda, noise_std, kappa_t);
     
 % %     Median-filter t
-%     t = maybe_gpu(use_gpu, medfilt1(gather(t)));
+%     t = extract.helpers.maybe_gpu(use_gpu, medfilt1(gather(t)));
     
     if sum(t)==0
         break;
     end
     % S update (transpose when necessary)
-    t_noise_limit = sqrt(2)*3*estimate_noise_std(t);
+    t_noise_limit = sqrt(2)*3*extract.helpers.estimate_noise_std(t);
     idx_valid_t = find(t>t_noise_limit);
     M_subsub =  M_sub(:, idx_valid_t);
     t_sub = t(idx_valid_t)';
     lambda = sum(t_sub) * scale_lambda;
-    s_sub = solve_single_source_adaptive(t_sub, M_subsub', n_iter_in, lambda, noise_std, kappa_s)';
+    s_sub = extract.solvers.solve_single_source_adaptive(t_sub, M_subsub', n_iter_in, lambda, noise_std, kappa_s)';
 %     if exist('kappa_func', 'var')
-%         s_sub = solve_single_source_adaptive(t_sub, M_subsub', n_iter_in, lambda, kappa, kappa_func)';
+%         s_sub = extract.solvers.solve_single_source_adaptive(t_sub, M_subsub', n_iter_in, lambda, kappa, kappa_func)';
 %     else
-%         s_sub = solve_single_source_adaptive(t_sub, M_subsub', n_iter_in, lambda, kappa)';
+%         s_sub = extract.solvers.solve_single_source_adaptive(t_sub, M_subsub', n_iter_in, lambda, kappa)';
 %     end
 
     s = s_blank;
@@ -83,7 +83,7 @@ end
 
 % Correlation trace
 is_pos_s = s>0;
-M_sub = ( maybe_gpu(use_gpu, Mt(:, is_pos_s(:))) )';
+M_sub = ( extract.helpers.maybe_gpu(use_gpu, Mt(:, is_pos_s(:))) )';
 sn = s / sum(s.^2);
 t_corr = max(0, sn(is_pos_s)' * M_sub);
 
@@ -102,7 +102,7 @@ t_corr = max(0, sn(is_pos_s)' * M_sub);
                 is_s = get_support_cpu(s_2d, se_high);
             end
             
-            M_sub = ( maybe_gpu(use_gpu, Mt(:, is_s)) )';
+            M_sub = ( extract.helpers.maybe_gpu(use_gpu, Mt(:, is_s)) )';
         end
     end
     

@@ -18,7 +18,7 @@ nIter_sub = 1;
 
 loss = zeros(1,nIter,'single');
 I = eye(size(X,2),'single');
-[loss, I, X, A, B, lambda, mask] = maybe_gpu(use_gpu, ...
+[loss, I, X, A, B, lambda, mask] = extract.helpers.maybe_gpu(use_gpu, ...
     loss, I, X, A, B, lambda, mask);
 
 if transpose_B

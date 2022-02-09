@@ -17,7 +17,7 @@ opt_2 = 0;
 
 loss = zeros(1,nIter,'single');
 I = eye(size(X,2),'single');
-[loss, I, X, A, B, lambda, mask] = maybe_gpu(use_gpu, ...
+[loss, I, X, A, B, lambda, mask] = extract.helpers.maybe_gpu(use_gpu, ...
     loss, I, X, A, B, lambda, mask);
 
 if transpose_B
@@ -51,8 +51,8 @@ n = numel(X);  % Problem dimension
 
 % Initialize kappa
 kappa =0.6361*noise_std * ones(size(B), 'single');
-kappa = maybe_gpu(use_gpu, kappa);
-pre_kappa = maybe_gpu(use_gpu, 0.6361*ones(size(X,1), size(A, 1), 'single'));
+kappa = extract.helpers.maybe_gpu(use_gpu, kappa);
+pre_kappa = extract.helpers.maybe_gpu(use_gpu, 0.6361*ones(size(X,1), size(A, 1), 'single'));
 
 % Estimate kappa at below iteration indices
 idx_estimate_kappa = round(nIter*[0.5, 0.7, 0.9]);
@@ -79,13 +79,13 @@ while k < nIter
         res = single(res > v*noise_std);
         res = res * A_mask;
 
-        pre_eps = eps_func(res, pre_kappa, v, 0.05);
+        pre_eps = extract.helpers.eps_func(res, pre_kappa, v, 0.05);
         pre_eps = medfilt1(gather(pre_eps), 5, [], 1);
 
         A_weighting = bsxfun(@rdivide, A_unscaled+1e-6, sum(A_unscaled+1e-6, 1));
         eps = pre_eps * gather(A_weighting);
-        kappa = maybe_gpu(use_gpu, noise_std * kappa_of_epsilon(eps));
-        pre_kappa = kappa_of_epsilon(pre_eps);
+        kappa = extract.helpers.maybe_gpu(use_gpu, noise_std * extract.helpers.kappa_of_epsilon(eps));
+        pre_kappa = extract.helpers.kappa_of_epsilon(pre_eps);
         clear res pre_eps;
     end
     % X fixed-point update

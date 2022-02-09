@@ -13,7 +13,7 @@ opt_2=0;
 
 loss = zeros(1,nIter,'single');
 I = eye(size(X,2),'single');
-[loss, I, X, A, lambda, mask] = maybe_gpu(use_gpu, ...
+[loss, I, X, A, lambda, mask] = extract.helpers.maybe_gpu(use_gpu, ...
     loss, I, X, A, lambda, mask);
 
 Ac = A*A';

@@ -1,6 +1,6 @@
 function [S_out, l, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
         S_in, T, Mt, mask, fov_size, avg_radius, ...
-        lambda, kappa, max_iter, TOL, compute_loss, est_func, use_gpu)
+        lambda, kappa, max_iter, TOL, compute_loss, extract.helpers.est_func, use_gpu)
     
     GPU_SLACK_FACTOR = 5;
     CPU_SPACE_SIDELEN = 10 * 2 * avg_radius; % ~10 cells wide
@@ -13,7 +13,7 @@ function [S_out, l, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
     h = fov_size(1); w = fov_size(2);
     l = {};  % If asked, keep loss in a cell array
     % Subtract trace noise from traces to avoid potential side-effects
-    T_noise_limit = sqrt(2)*3*estimate_noise_std(T);
+    T_noise_limit = sqrt(2)*3*extract.helpers.estimate_noise_std(T);
     T = max(0, bsxfun(@minus, T, T_noise_limit));
     % Decide on space partitions
     % CPU partitions
@@ -32,9 +32,9 @@ function [S_out, l, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
     idx_S_nonzero = find(sum(mask, 2) > 0);
     % Solve for S in multiple sub-problems
     for i_x = 1:np_x
-        idx_x = select_indices(w, np_x, i_x);
+        idx_x = extract.helpers.select_indices(w, np_x, i_x);
         for i_y = 1:np_y
-            idx_y = select_indices(h, np_y, i_y);
+            idx_y = extract.helpers.select_indices(h, np_y, i_y);
             % convert space indices from 2d to 1d
             [sub_x, sub_y] = meshgrid(idx_x, idx_y);
             idx_space = sort(sub2ind(fov_size, sub_y(:), sub_x(:)));
@@ -49,12 +49,12 @@ function [S_out, l, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
                 T_sub = T(idx_comp, :);
                 Mt_sub = Mt(:, idx_space);
                 % Solve regression
-                [S_out_sub, l{end+1}] = est_func(S_in_sub, T_sub, Mt_sub, ...
+                [S_out_sub, l{end+1}] = extract.helpers.est_func(S_in_sub, T_sub, Mt_sub, ...
                     mask_sub, lambda(idx_comp), kappa, max_iter, TOL, ...
                     compute_loss, use_gpu, 1);
                 S_out(idx_space, idx_comp) = S_out_sub;
                 % Update S_surround & T_corr_in & T_corr_out
-                [Mt_sub, S_out_sub, T_sub] = maybe_gpu(...
+                [Mt_sub, S_out_sub, T_sub] = extract.helpers.maybe_gpu(...
                     use_gpu, Mt_sub, S_out_sub, T_sub);
                 S_surround_sub = max(0, (T_sub * Mt_sub)');
                 S_surround_sub(S_out_sub > 0.01) = 0;
@@ -72,6 +72,6 @@ function [S_out, l, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
     T_corr_in = Tt_corr_in';
     T_corr_out = Tt_corr_out';
     % Ensure correct scaling of images
-    [S_out, scale_s] = normalize_to_one(S_out);
+    [S_out, scale_s] = extract.helpers.normalize_to_one(S_out);
     T_corr_in = bsxfun(@times, T_corr_in, scale_s');
 end

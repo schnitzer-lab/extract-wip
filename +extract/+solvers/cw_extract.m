@@ -32,12 +32,12 @@ show_each_cell = 0;
 % Reduce noise in movie with a spatial filter
 switch config.cellfind_filter_type
     case 'butter'
-        M = spatial_bandpass(M, avg_radius, inf, ...
+        M = extract.helpers.spatial_bandpass(M, avg_radius, inf, ...
             config.spatial_lowpass_cutoff, use_gpu, config.smoothing_ratio_x2y);
     case 'gauss'
-        M = spatial_gauss_lowpass(M, avg_radius, use_gpu);
+        M = extract.helpers.spatial_gauss_lowpass(M, avg_radius, use_gpu);
     case 'wiener'
-        M = imwiener(M, use_gpu);
+        M = extract.helpers.imwiener(M, use_gpu);
     case 'movavg'
         moving_rad=max(floor(config.moving_radius),2);
         X=ones(moving_rad,moving_rad,1)/(moving_rad^2); 
@@ -54,7 +54,7 @@ if config.visualize_cellfinding
     is_bad=1;
     
     str = sprintf('\t \t \t Using cell finding visualization tool...\n');
-    dispfun(str, config.verbose ==2);
+    extract.helpers.dispfun(str, config.verbose ==2);
     
     max_im = max(M,[],3);
 
@@ -88,7 +88,7 @@ M = reshape(M, h * w, n);
 
 % More efficient to use M transposed (cheaper to index in space this way)
 Mt = M';
-noise_per_pixel = estimate_noise_std(Mt, 1, use_gpu);
+noise_per_pixel = extract.helpers.estimate_noise_std(Mt, 1, use_gpu);
 % Apply movie mask to noise if it exists
 if ~isempty(config.movie_mask)
     noise_per_pixel = noise_per_pixel(config.movie_mask(:));
@@ -97,7 +97,7 @@ noise_std = median(noise_per_pixel);
 
 
 % Get a stack of 2 ims (max im + im of max idx) -- used to get seed pixels
-summary_stack = get_summary_stack(Mt, [h, w], max_spread, []);
+summary_stack = extract.helpers.get_summary_stack(Mt, [h, w], max_spread, []);
 summary.summary_im = reshape(summary_stack(:, 1), h, w);
 
 % Stop finding cells if signal maximum is below a certain value
@@ -115,7 +115,7 @@ dim_limit = quantile(im_summary(:), 0.999) / ...
 
 min_magnitude = max(noise_limit, dim_limit);
 
-dispfun(sprintf(...
+extract.helpers.dispfun(sprintf(...
     '\t \t \t \t noise std: %.4f \n\t \t \t \t minimum magnitude: %.4f \n',...
     noise_std, min_magnitude), config.verbose==2);
 
@@ -152,7 +152,7 @@ vals_max = [];
 kappa_s = config.cellfind_kappa_std_ratio;
 % Adaptive kappa for t if asked
 if config.adaptive_kappa
-    kappa_t = @(d, k, v, alpha) kappa_of_epsilon(eps_func(d, k, v, alpha));
+    kappa_t = @(d, k, v, alpha) extract.helpers.kappa_of_epsilon(extract.helpers.eps_func(d, k, v, alpha));
 else
     kappa_t = kappa_s;
 end
@@ -162,7 +162,7 @@ for i = 1:max_steps
     if (config.visualize_cellfinding && i>1 && ~is_bad)
         
             subplot(121)
-            plot_cells_overlay(reshape(gather(s),h,w),[0,1,0],[])
+            extract.debug.plot_cells_overlay(reshape(gather(s),h,w),[0,1,0],[])
             drawnow;
         
     end
@@ -184,11 +184,11 @@ for i = 1:max_steps
         s_init = generate_images_from_centroids(h, w, s_proto, ...
                 [y_max; x_max], init_radius);
     else
-        s_init = generate_init_image(Mt, h, w, ind_max, 0.5, floor(avg_radius*1.5));
+        s_init = extract.helpers.generate_init_image(Mt, h, w, ind_max, 0.5, floor(avg_radius*1.5));
     end
     s_2d_init = reshape(s_init, h, w);
     s_2d_init = single(s_2d_init);
-    s_2d_init = maybe_gpu(use_gpu, s_2d_init);
+    s_2d_init = extract.helpers.maybe_gpu(use_gpu, s_2d_init);
 
     
 
@@ -202,7 +202,7 @@ for i = 1:max_steps
 
     % Check attributes
     % check image isn't too small
-    cell_area = gather(get_cell_areas(s));
+    cell_area = gather(extract.helpers.get_cell_areas(s));
     metrics(i, 1) = cell_area;
     is_attr_bad(i, 1) = cell_area < min_num_pixels;
     % Check image isn't too big
@@ -248,7 +248,7 @@ for i = 1:max_steps
     idx_t = find(t_corr > 0);
     Mt(idx_t, idx_s) = Mt(idx_t, idx_s) - gather(1.0 * t_corr(idx_t)' * s_corr(idx_s)');
 
-    summary_stack = get_summary_stack(...
+    summary_stack = extract.helpers.get_summary_stack(...
         Mt, [h, w], max_spread, summary_stack, idx_s);
     
     if is_bad
@@ -268,7 +268,7 @@ for i = 1:max_steps
 
                 
                 subplot(121)
-                plot_cells_overlay(reshape(gather(s),h,w),[1,0,0],[])
+                extract.debug.plot_cells_overlay(reshape(gather(s),h,w),[1,0,0],[])
                 title(['Cell finding in process. ' num2str(i) ' iterations ' num2str(num_good_cells) ' found.'])
                 drawnow;
             end
@@ -287,7 +287,7 @@ for i = 1:max_steps
             mov_snr_all = [mov_snr_all, gather(max_t/noise_std - bias_func(config.cellfind_kappa_std_ratio))];
 
             subplot(121)
-            plot_cells_overlay(reshape(gather(s),h,w),[1,0,0],[])
+            extract.debug.plot_cells_overlay(reshape(gather(s),h,w),[1,0,0],[])
             title(['Cell finding in process. ' num2str(i) ' iterations ' num2str(num_good_cells) ' found.'])
             drawnow;
             subplot(222)
@@ -310,7 +310,7 @@ for i = 1:max_steps
         if (config.visualize_cellfinding && i>1 && ~is_bad)
         
             subplot(121)
-            plot_cells_overlay(reshape(gather(s),h,w),[0,1,0],[])
+            extract.debug.plot_cells_overlay(reshape(gather(s),h,w),[0,1,0],[])
             drawnow;
         
         end
@@ -318,7 +318,7 @@ for i = 1:max_steps
     end
     
     if mod(i, 100)==0
-        dispfun(sprintf('\t\t\t Step #%d, found %d cells... \n', ...
+        extract.helpers.dispfun(sprintf('\t\t\t Step #%d, found %d cells... \n', ...
             i, num_good_cells), config.verbose == 2);
     end
 end
@@ -350,7 +350,7 @@ summary.S_change = S_change;
 summary.T_change = T_change;
 summary.noise_per_pixel = noise_per_pixel;
 
-dispfun(sprintf(...
+extract.helpers.dispfun(sprintf(...
     '\t \t \t %d cells found after a total of %d steps. \n', ...
     size(S, 2), i), config.verbose ==2);
 

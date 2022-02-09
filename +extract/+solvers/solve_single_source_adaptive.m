@@ -14,7 +14,7 @@ x = max(0, (a'*B)/ sum(a2));
 
 % Initialize kappa
 kappa = ones(1, k, 'single');
-kappa = maybe_gpu(use_gpu, kappa);
+kappa = extract.helpers.maybe_gpu(use_gpu, kappa);
 
 % If kappa is a function, do adaptive kappa
 is_adaptive = ~isnumeric(kappa_func);
@@ -48,7 +48,7 @@ while i < max_iter
         d_proto = (bsxfun(@minus, res, v*noise_std)>0);
         d = a_mask * d_proto;
         % Update kappa
-        kappa = maybe_gpu(use_gpu, kappa_func(d, kappa, v, alpha));
+        kappa = extract.helpers.maybe_gpu(use_gpu, kappa_func(d, kappa, v, alpha));
         % Update kappa*noise_std
         scaled_kappa = kappa * noise_std;
     end

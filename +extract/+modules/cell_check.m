@@ -19,7 +19,7 @@ function cell_check(output, M)
     color_unlabeled = [0.7, 0.8, 0.85];
     color_current = [0, 0.5, 0.9];
     face_alpha = 0.1;
-    default_colormap = flipud(brewermap(64, 'rdgy'));
+    default_colormap = flipud(extract.debug.brewermap.brewermap(64, 'rdgy'));
     h_neighbor_outlines = [];
     score_lower_threshold = 0;
     score_upper_threshold = 1; 
@@ -29,7 +29,7 @@ function cell_check(output, M)
     
     % Get cellcheck struct
     
-    [is_attr_bad,metrics,is_elim]=get_cellcheck_features(output);
+    [is_attr_bad,metrics,is_elim]=extract.helpers.get_cellcheck_features(output);
     
     
     
@@ -51,7 +51,7 @@ function cell_check(output, M)
     
     % Train initial scores
     extract_scores = zeros(num_cells, 1);
-    [guess_good, guess_bad] = guess_labels_from_metrics(metrics);
+    [guess_good, guess_bad] = extract.helpers.guess_labels_from_metrics(metrics);
     ml_labels = zeros(num_cells, 1, 'single');
     ml_labels(guess_good) = 1;
     ml_labels(guess_bad) = -1;
@@ -578,12 +578,12 @@ function cell_check(output, M)
         % Color for displaying text label in images and on event peaks
         text_color = [0.3, 0.5, 1];
         % Get active periods
-        active_frames = get_active_frames(trace > 0.2 * max(trace), 2);
+        active_frames = extract.helpers.guess_labels_from_metrics(trace > 0.2 * max(trace), 2);
         % Transpose for convenience
         active_frames = active_frames';
 
         % Detect events and display N of them
-        event_frames = detect_ca_events(trace, 0.5);
+        event_frames = extract.debug.detect_ca_events(trace, 0.5);
         
         n_active_frames = min([default_n_active_frames,...
             size(active_frames, 2), length(event_frames)]); % # of events to display
@@ -620,14 +620,14 @@ function cell_check(output, M)
         axes_width = 1 / (1 + default_n_active_frames);
         % Plot cell image
         im = full(cellcheck.ims(y_current, x_current, idx_current_cell));
-        [x_lims, y_lims] = get_image_xy_ranges(im> 0.2, 5);
+        [x_lims, y_lims] = extract.helpers.get_image_xy_ranges(im> 0.2, 5);
         cell_image = im(y_lims(1):y_lims(2), x_lims(1):x_lims(2));
         % Create axes & image first time, update cdata in subsequent calls
         if isempty(handle_snapshots{1})
             ax = make_axes(panel_snapshot, 0, 0, axes_width, 1, 0);
             handle_snapshots{1} = imagesc(ax, cell_image); 
             axis(ax, 'image', 'off');
-            colormap(ax, flipud(brewermap(64, 'rdbu')));
+            colormap(ax, flipud(extract.debug.breweramp.brewermap(64, 'rdbu')));
         else
             set(handle_snapshots{1}, 'CData', cell_image);
         end
@@ -745,7 +745,7 @@ function cell_check(output, M)
             images = max(cat(3, images, ims_neighbor), [], 3);
         end
         % get the extent of the roi
-        [x_range, y_range] = get_image_xy_ranges(images> 0.2, 1);
+        [x_range, y_range] = extract.helpers.get_image_xy_ranges(images> 0.2, 1);
         x_current = x_range(1):x_range(2);
         y_current = y_range(1):y_range(2);
     end
@@ -788,7 +788,7 @@ function cell_check(output, M)
 %         ims_small = cell(size(ims, 3));
 %         for i = 1:size(ims, 3)
 %             im = ims(:, :, i);
-%             [x_range, y_range] = get_image_xy_ranges(im, 5);
+%             [x_range, y_range] = extract.helpers.get_image_xy_ranges(im, 5);
 %             ims_small{i} = im(y_range(1):y_range(2), x_range(1):x_range(2));
 %         end
 %         % Don't output a cell if only 1 image
@@ -799,7 +799,7 @@ function cell_check(output, M)
 % 
 %     function plot_roi_small
 %         im = cellcheck.ims(:, :, idx_current_cell);
-%         [x_range, y_range] = get_image_xy_ranges(im, 0);
+%         [x_range, y_range] = extract.helpers.get_image_xy_ranges(im, 0);
 %         imagesc(ax_cell_image, im(y_range(1):y_range(2), x_range(1):x_range(2))); 
 %         axis(ax_cell_image, 'equal', 'off');
 %         colormap(ax_cell_image, flipud(brewermap(64, 'rdbu')));
@@ -926,7 +926,7 @@ function cell_check(output, M)
 
     function M_out = get_movie(t_range)    
         if ischar(M)
-            [path, dataset] = parse_movie_name(M);
+            [path, dataset] = extract.helpers.parse_movie_name(M);
             x_begin = x_current(1);
             x_end = x_current(end);
             y_begin = y_current(1);
@@ -981,7 +981,7 @@ function cell_check(output, M)
             file_suffix = '_EXTRACT_output';
             if ischar(M)
                 % Make name same as the movie string name
-                [path, ~] = parse_movie_name(M);
+                [path, ~] = extract.helpers.parse_movie_name(M);
                 [dir, name, ~] = fileparts(path);
                 path = name;
                 if ~isempty(dir)

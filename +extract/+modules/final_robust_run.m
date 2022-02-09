@@ -27,6 +27,6 @@ function [traces,filters]=final_robust_run(M,output_in,choices)
 	config.S_init=reshape(S_in, size(S_in, 1) * size(S_in, 2), size(S_in, 3));
 	config.T_init=traces_in';
 
-	output=extractor(M,config);
+	output=extract.solvers.extractor(M,config);
 	traces=output.temporal_weights;
 end
