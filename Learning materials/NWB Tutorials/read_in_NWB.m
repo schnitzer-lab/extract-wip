@@ -38,7 +38,7 @@ image_stack = nwb.acquisition.get('TwoPhotonSeries').data.internal.stub(:, :, 1:
 
 % Define config structure with default arguments
 config = [];
-config = get_defaults(config); %calls the defaults
+config = extract.get_defaults(config); %calls the defaults
 config.avg_cell_radius = 7; % Set average cell radius estimate (REQUIRED)
 config.preprocess = true;% preprocess data before EXTRACT
 config.use_gpu = false;% assuming no GPU available
@@ -48,4 +48,4 @@ config.use_gpu = false;% assuming no GPU available
 % specified in the config structure. The output structure contains the spatial 
 % and temporal weights for each ROI. 
 
-output = extractor(image_stack, config);% Perform EXTRACTion:
+output = extract.solvers.extractor(image_stack, config);% Perform EXTRACTion:

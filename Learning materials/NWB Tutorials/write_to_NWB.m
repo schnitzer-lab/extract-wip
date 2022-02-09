@@ -67,7 +67,7 @@ options.sampling_rate = 15; % sampling rate. Defaults to NaN
 % % If timing is irregular, supply timestamps instead
 % options.timestamps = 0:1999;
 %% EXTRACT Output to NwbFile Object
-output_nwb = EXTRACT_output_to_nwb(output, options);
+output_nwb = extract.helpers.EXTRACT_output_to_nwb(output, options);
 %% Export NWB file
 nwbExport(output_nwb, 'EXTRACT_output.nwb');
 %% Approach 2. Writing data to an existing NWB file
@@ -90,7 +90,7 @@ options.source_acquisition = 'TwoPhotonSeries';
 % % unit of ROI timeseries data. Defaults to 'n.a.'
 options.timeseries_data_unit = 'n.a.';
 %% EXTRACT Output to NwbFile Object
-output_nwb = EXTRACT_output_to_nwb(output, options);
+output_nwb = extract.helpers.EXTRACT_output_to_nwb(output, options);
 %% Export NWB file
 % % When appending to an NWB file that was read in from disk, you MUST use the same 
 % % file path. Otherwise, the nwbExport function will produce an error. 
