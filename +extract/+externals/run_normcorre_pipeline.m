@@ -13,7 +13,7 @@ file_type       = config.file_type;
 
 switch file_type
     case 'h5'
-        [input_filename,input_datasetname] = parse_movie_name(input);
+        [input_filename,input_datasetname] = extract.helpers.parse_movie_name(input);
         movie_info = h5info(input_filename,input_datasetname);
         movie_size = num2cell(movie_info.Dataspace.Size);
         [nx, ny, totalnum] = deal(movie_size{:});
@@ -31,7 +31,7 @@ end
 
 
 
-[output_filename,output_datasetname] = parse_movie_name(output);
+[output_filename,output_datasetname] = extract.helpers.parse_movie_name(output);
 
 
 
@@ -76,13 +76,13 @@ if isempty(template)
         case 'h5'
             im1 = single(h5read(input_filename, input_datasetname, [1, 1, 1], [nx, ny, nt_template]));   
         case 'tif'
-            im1 = single(read_from_tif(input,1,nt_template));
+            im1 = single(extract.debug.read_from_tif(input,1,nt_template));
         case 'tiff'
-            im1 = single(read_from_tif(input,1,nt_template));
+            im1 = single(extract.debug.read_from_tif(input,1,nt_template));
     end
 
     if bandpass
-        im1 = spatial_bandpass(im1,avg_cell_radius,10,2,use_gpu);
+        im1 = extract.helpers.spatial_bandpass(im1,avg_cell_radius,10,2,use_gpu);
     end
 
 
@@ -106,16 +106,16 @@ for i=1:numel(startno)
         case 'h5'
             M = single(h5read(input_filename,input_datasetname,[1,1,startno(i)],[nx,ny,perframes(i)]));
         case 'tif'
-            M = single(read_from_tif(input,startno(i),perframes(i)));
+            M = single(extract.debug.read_from_tif(input,startno(i),perframes(i)));
         case 'tiff'
-            M = single(read_from_tif(input,startno(i),perframes(i)));
+            M = single(extract.debug.read_from_tif(input,startno(i),perframes(i)));
     end
     
     
     
 
     if bandpass
-        M_proc = spatial_bandpass(M,avg_cell_radius,10,2,use_gpu);
+        M_proc = extract.helpers.spatial_bandpass(M,avg_cell_radius,10,2,use_gpu);
     else
         M_proc = M;
     end
@@ -150,7 +150,7 @@ for i=1:numel(startno)
 
 
         if bandpass
-            M_proc = spatial_bandpass(M_rigid,avg_cell_radius,10,2,use_gpu);
+            M_proc = extract.helpers.spatial_bandpass(M_rigid,avg_cell_radius,10,2,use_gpu);
         else
             M_proc = M_rigid;
         end

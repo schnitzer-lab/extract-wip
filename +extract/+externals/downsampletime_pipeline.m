@@ -1,6 +1,6 @@
 function downsampletime_pipeline(input,blocks,dt,totalnum)
 
-[filename,datasetname] = parse_movie_name(input);
+[filename,datasetname] = extract.helpers.parse_movie_name(input);
 
 filename  = filename(1:end-3);
 
@@ -37,7 +37,7 @@ for i=1:numFrame:totalnum
     fprintf('\t %s: Running %i out of %i parts \n',datestr(now),round(i/numFrame)+1,totalnum/numFrame);
     data = h5read([filename '.h5'],datasetname,[1,1,i],[nx,ny,numFrame]);
     
-    [movie_out] = downsample_time(data,dt);
+    [movie_out] = extract.helpers.downsample_time(data,dt);
     
    
     

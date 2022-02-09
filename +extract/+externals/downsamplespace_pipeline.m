@@ -64,12 +64,12 @@ for i=1:numFrame:totalnum
         case 'h5'
             data = single(h5read([filename '.h5'],datasetname,[1,1,i],[nx,ny,numFrame]));
         case 'tif'
-            data = single(read_from_tif(input,i,numFrame));
+            data = single(extract.externals.read_from_tif(input,i,numFrame));
         case 'tiff'
-            data = single(read_from_tif(input,i,numFrame));
+            data = single(extract.externals.read_from_tif(input,i,numFrame));
     end
     
-    [movie_out] = downsample_space(data,dt);
+    [movie_out] = extract.helpers.downsample_space(data,dt);
     
     h5write([outputfilename '.h5'],datasetname,single(movie_out),[1,1,i],[nx/dt,ny/dt,round(numFrame)]);
    
