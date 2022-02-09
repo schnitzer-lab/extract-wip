@@ -41,19 +41,19 @@ else
 end
 
 for i = 1:n_chunks
-    idx = select_indices(m, n_chunks, i);
+    idx = extract.helpers.select_indices(m, n_chunks, i);
     if time_axis == 2
         data_small = data(idx, :);
     else
         data_small = data(:, idx);
     end
     % Send to GPU if use_gpu=true and data not already on GPU
-    data_small = maybe_gpu(use_gpu & ~is_input_gpuArray, data_small, time_axis);
+    data_small = extract.helpers.maybe_gpu(use_gpu & ~is_input_gpuArray, data_small, time_axis);
     
-	noise_std(idx) = gather(estimate_noise_std_func(data_small, time_axis));
+	noise_std(idx) = gather(extract.helpers.estimate_noise_std_func(data_small, time_axis));
 end
 
-function noise_std = estimate_noise_std_func(M, fft_axis)
+function noise_std = extract.helpers.estimate_noise_std_func(M, fft_axis)
 % Estimate noise std of each row of a matrix
 
 cutoff_freq = 0.5;  % normalized to 1

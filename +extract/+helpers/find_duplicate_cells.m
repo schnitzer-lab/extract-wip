@@ -9,7 +9,7 @@ function idx_trash = find_duplicate_cells(S, Tt, overlap_idx)
     idx_select = find(sum(images_in_overlap, 1) > 0);
     
     % Find spatially overlapping group of cells
-    cc_image = find_conncomp(S(:, idx_select), S_corr_thresh);
+    cc_image = extract.helpers.find_conncomp(S(:, idx_select), S_corr_thresh);
     
     idx_trash = [];
     
@@ -18,7 +18,7 @@ function idx_trash = find_duplicate_cells(S, Tt, overlap_idx)
         idx_with_spat_overlap = idx_select(cc_image(k).indices);
 
         % 1st Pass: cells with very high trace correlation
-        cc_trace = find_conncomp(Tt(:, idx_with_spat_overlap),...
+        cc_trace = extract.helpers.find_conncomp(Tt(:, idx_with_spat_overlap),...
             T_dup_thresh);
         idx_trash_this = [];
         for kk = 1:length(cc_trace)
@@ -36,7 +36,7 @@ function idx_trash = find_duplicate_cells(S, Tt, overlap_idx)
                 idx_trash_this);
 
         % 2nd pass: recursively eliminate the most "connected" cell
-        [cc_trace, C] = find_conncomp(Tt(:, idx_with_spat_overlap),...
+        [cc_trace, C] = extract.helpers.find_conncomp(Tt(:, idx_with_spat_overlap),...
             T_corr_thresh);
         for kk = 1:length(cc_trace)
             idx = cc_trace(kk).indices;

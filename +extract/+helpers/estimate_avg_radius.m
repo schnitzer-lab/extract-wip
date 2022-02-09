@@ -8,10 +8,10 @@ if nargin < 3 || isempty(method)
 end
 
 if strcmpi(method, 'direct')
-    [l_major, l_minor] = get_image_axis_lengths(S, fov_size);
+    [l_major, l_minor] = extract.helpers.get_image_axis_lengths(S, fov_size);
     radii = sqrt(l_major .* l_minor) / 2;
     avg_radius = double(quantile(radii, 0.5));
 elseif strcmpi(method, 'indirect')
-    areas = get_cell_areas(S);
+    areas = extract.helpers.get_cell_areas(S);
     avg_radius = double(quantile(sqrt(areas/pi), 0.5));
 end

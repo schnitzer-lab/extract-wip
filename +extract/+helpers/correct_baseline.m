@@ -29,7 +29,7 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
     % background)
     ppp = std(M, 0, 2);
     for i = 1:num_chunks
-        indices = select_indices(m, num_chunks, i);
+        indices = extract.helpers.select_indices(m, num_chunks, i);
         if remove_background
             ppp_this = ppp(indices);
         else
@@ -51,7 +51,7 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
         ss = round(k * 2);  % Sample size
         smoothing_hlen = 5;%  Half-length of the baseline smoothing filter
         
-        M = maybe_gpu(use_gpu, M);
+        M = extract.helpers.maybe_gpu(use_gpu, M);
         
         % Remove static background 
         if ~isempty(ppp)
@@ -59,7 +59,7 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
             for ik = 1:1
                 t = s' * M / max(1e-6, sum(s.^2));
                 s = max(M * t' / sum(t.^2), 0);
-                t = maybe_gpu(use_gpu, medfilt1(gather(t)));
+                t = extract.helpers.maybe_gpu(use_gpu, medfilt1(gather(t)));
             end
             M = M - s * t;
         end
@@ -78,18 +78,18 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
         num_samples = max(3, ceil(num_frames / k)); % At least 3 samples
         sampled_indices = round(linspace(1, num_frames, num_samples));
         baselines = zeros(num_components, num_samples, 'single');
-        baselines = maybe_gpu(use_gpu, baselines);
+        baselines = extract.helpers.maybe_gpu(use_gpu, baselines);
 
         for idx_sample = 1:num_samples
-            idx_begin = max(1, sampled_indices(idx_sample) - round(ss / 2));
+            idx_begin = max(1, extract.helpers.sampled_indices(idx_sample) - round(ss / 2));
             idx_end = min(num_frames, ...
-                sampled_indices(idx_sample) + round(ss / 2));
+                extract.helpers.sampled_indices(idx_sample) + round(ss / 2));
             data = M(:, idx_begin:idx_end);
 
             % Baseline estimate is the most frequent bin in the histogram
             hist_counts = histc(data, edges, 2);
 
-    %         hist_counts = maybe_gpu(use_gpu, ...
+    %         hist_counts = extract.helpers.maybe_gpu(use_gpu, ...
     %             zeros(num_components, length(edges)-1, 'single'));
     %         for idx_pixel = 1:num_components
     %             [hist_counts(idx_pixel, :), ~] = histcounts(...
@@ -108,7 +108,7 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
 
         % Smooth the baseline values with moving average filter
         filt_out = zeros(num_components, num_samples, 'single');
-        filt_out = maybe_gpu(use_gpu, filt_out);
+        filt_out = extract.helpers.maybe_gpu(use_gpu, filt_out);
         % Manual convolution (to avoid edge effects)
         for idx_sample = 0:num_samples - 1
             idx_begin = max(1, 1 + idx_sample - smoothing_hlen);
@@ -122,9 +122,9 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
 
         % Interpolate the sample baseline points
         % Matlab accepts the array to be interpolated as column vectors
-        subt = interp1(sampled_indices, ...
+        subt = interp1(extract.helpers.sampled_indices, ...
             filt_out', (1:num_frames)', 'linear')';
-        subt = maybe_gpu(use_gpu, subt);
+        subt = extract.helpers.maybe_gpu(use_gpu, subt);
 %         std_subt = std(subt, 0, 2);
 %         fprintf('\t\t\t 70 percentile baseline std: %.4f \n', quantile(std_subt, 0.7));
         M = M - subt;

@@ -43,7 +43,7 @@ function metric = spat_corruption(F, siz, visualize)
     if visualize
         for i = 24:size(F, 2)
             im = reshape(F(:, i), h, w);
-            [x_range, y_range] = get_image_xy_ranges(im, 5);
+            [x_range, y_range] = extract.helpers.get_image_xy_ranges(im, 5);
             im_small = im(y_range(1):y_range(2), x_range(1):x_range(2));
             imagesc(im_small); axis image;colormap jet;
             title(sprintf('Component %d, spat corr: %.2f',  i, metric(i)));

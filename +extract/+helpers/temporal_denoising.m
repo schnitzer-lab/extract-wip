@@ -32,7 +32,7 @@ end
 %         if mod(i, 20) == 0
 %             fprintf('%s: Processing %d of %d chunks.. \n', datestr(now), i, num_chunks);
 %         end
-        idx = select_indices(m, num_chunks, i);
+        idx = extract.helpers.select_indices(m, num_chunks, i);
         M_in_this = double(M(idx, :));
         M_out_this = wdenoise(M_in_this',1,  'wavelet', 'fk6',...
             'DenoisingMethod', denoising_method);

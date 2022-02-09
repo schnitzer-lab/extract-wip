@@ -25,7 +25,7 @@ function [idx_active_label, preds, competences, w] = ...
 
     % Train classifier to get predictions
     [preds, w] = ...
-        ml_predict_labels(features, ml_labels, do_zscoring);
+        extract.helpers.ml_predict_labels(features, ml_labels, do_zscoring);
     
 %     Get competence of the classifier for classification
 %     Do N shuffles and compare each prediction
@@ -39,7 +39,7 @@ function [idx_active_label, preds, competences, w] = ...
 %         idx_l_sub = randsample(idx_l, round(length(idx_l)*0.8));
 %         labels_this(idx_l_sub) = ml_labels(idx_l_sub);
 %         [preds_this, ~] = ...
-%             ml_predict_labels(features, labels_this, do_zscoring);
+%             extract.helpers.ml_predict_labels(features, labels_this, do_zscoring);
 %         preds_mat(:, j) = preds_this;
 %     end 
 %     Compare the mean std of preds to that of uniform [0, 1]

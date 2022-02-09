@@ -18,7 +18,7 @@ end
             bw_im = im>0.1;
             % Return 0 if image is zeroed itself
             if sum(bw_im(:)) > 0
-                [x_range, y_range] = get_image_xy_ranges(bw_im, ex);
+                [x_range, y_range] = extract.helpers.get_image_xy_ranges(bw_im, ex);
                 x_range = x_range(1):x_range(2);
                 y_range = y_range(1):y_range(2);
                 im_small = im(y_range, x_range);

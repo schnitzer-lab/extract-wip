@@ -27,7 +27,7 @@ function [M_out, fov_occupation] = get_current_partition(...
     
     % Get the desired block out of the movie
     if ischar(M)
-        [path, dataset] = parse_movie_name(M);
+        [path, dataset] = extract.helpers.parse_movie_name(M);
         idx_begin = [y_begin, x_begin, 1];
         num_elements = [y_end - y_begin + 1, x_end - x_begin + 1, npt];
         M_out = h5read(path, dataset, idx_begin, num_elements);
@@ -41,7 +41,7 @@ function [M_out, fov_occupation] = get_current_partition(...
     % Trim zero edges (e.g. due to image registration ertifacts)
     try
         [M_out, nz_top, nz_bottom, nz_left, nz_right] = ...
-            remove_zero_edge_pixels(M_out);
+        extract.helpers.remove_zero_edge_pixels(M_out);
     catch
         nz_top=0;
         nz_bottom=0;

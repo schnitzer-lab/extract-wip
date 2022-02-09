@@ -40,7 +40,7 @@ for i = 1:n_chunks
     idx_end = min(t, i * chunk_size);
     data_small = data(:, :, idx_begin:idx_end);
     % Send to GPU if use_gpu=true and data not already on GPU
-    data_small = maybe_gpu(use_gpu & ~is_input_gpuArray, data_small);
+    data_small = extract.helpers.maybe_gpu(use_gpu & ~is_input_gpuArray, data_small);
     data_small = filtfunc(data_small, nhood);
     % Update current chunk
     if use_gpu && ~is_input_gpuArray

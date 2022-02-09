@@ -3,19 +3,19 @@ function [scores_1, scores_2] = find_spurious_cells_old(S, T, M, fov_size, use_g
     S_MASK_THRESHOLD = 0.001;
     T_MASK_THRESHOLD = 0.5;
     GAUSS_FILTER_RADIUS = 2;
-    [S, T] = maybe_gpu(use_gpu, S, T);
+    [S, T] = extract.helpers.maybe_gpu(use_gpu, S, T);
 
     % Get masks for cell images
     Mask = S > S_MASK_THRESHOLD;
     % Get masks & images for rings around cells
-    S_smooth = smooth_images(S, fov_size, GAUSS_FILTER_RADIUS);
-    S_smooth = normalize_to_one(S_smooth);
+    S_smooth = extract.helpers.smooth_images(S, fov_size, GAUSS_FILTER_RADIUS);
+    S_smooth = extract.helpers.normalize_to_one(S_smooth);
     Mask_surround = S_smooth > S_MASK_THRESHOLD;
     Mask_surround(Mask > 0) = 0;
     Mask_surround = single(Mask_surround);
     S_surround = (M * T') .* Mask_surround;
     S_surround(S_surround <0) = 0;
-    S_surround = normalize_to_one(S_surround);
+    S_surround = extract.helpers.normalize_to_one(S_surround);
 
     T1 = T;
     T2 = T;
@@ -29,7 +29,7 @@ function [scores_1, scores_2] = find_spurious_cells_old(S, T, M, fov_size, use_g
         num_chunks = 1;
     end
     for i = 1:num_chunks
-        indices = select_indices(m, num_chunks, i);
+        indices = extract.helpers.select_indices(m, num_chunks, i);
         M_small = gpuArray(M(:, indices));
         % Project movie activity on components of S separately:
         T1(:, indices) = S' * M_small;

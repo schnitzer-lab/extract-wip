@@ -5,5 +5,5 @@ function [S, T] = update_merged_images(S, T, S_smooth, merge)
         c = sqrt(sum(T(merge.cc(i).indices, :).^2, 2));
         S(:, merge.idx_merged(i)) = S(:, merge.cc(i).indices)*c;
     end
-    S = normalize_to_one(S);
+    S = extract.helpers.normalize_to_one(S);
 end

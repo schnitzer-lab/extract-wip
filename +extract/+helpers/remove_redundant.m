@@ -6,20 +6,20 @@ function [x, is_bad] = remove_redundant(...
     % Populate metrics
     metrics = zeros(length(fmap), num_cells_this_iter);
     % T metrics:
-    metrics(fmap('T_maxval'), :) = get_trace_snr(T);
-    metrics(fmap('T_corruption'), :) = temporal_corruption(T);
+    metrics(fmap('T_maxval'), :) = extract.helpers.get_trace_snr(T);
+    metrics(fmap('T_corruption'), :) = extract.helpers.temporal_corruption(T);
     T_smooth = medfilt1(T, 3, [], 2);
     T_norm = zscore(T_smooth, 1, 2) / sqrt(size(T_smooth, 2));
     metrics(fmap('T_max_corr'), :) = max(T_norm * T_norm', [], 1);
     % S metrics:
-    metrics(fmap('S_area_1'), :) = get_cell_areas(S, 0.2);
-    metrics(fmap('S_smooth_area_1'), :) = get_cell_areas(S_smooth, 0.2);
-    metrics(fmap('S_area_2'), :) = get_cell_areas(S);
-    metrics(fmap('S_smooth_area_2'), :) = get_cell_areas(S_smooth);
+    metrics(fmap('S_area_1'), :) = extract.helpers.get_cell_areas(S, 0.2);
+    metrics(fmap('S_smooth_area_1'), :) = extract.helpers.get_cell_areas(S_smooth, 0.2);
+    metrics(fmap('S_area_2'), :) = extract.helpers.get_cell_areas(S);
+    metrics(fmap('S_smooth_area_2'), :) = extract.helpers.get_cell_areas(S_smooth);
     S_norm = zscore(S_smooth, 1, 1) / sqrt(size(S_smooth, 1));
     metrics(fmap('S_max_corr'), :) = max(S_norm' * S_norm, [], 1);
-    metrics(fmap('S_corruption'), :) = spat_corruption(S, fov_size);
-    [circularities, eccentricities] = get_circularity_metrics(S, fov_size);
+    metrics(fmap('S_corruption'), :) = extract.helpers.spat_corruption(S, fov_size);
+    [circularities, eccentricities] = extract.helpers.get_circularity_metrics(S, fov_size);
     metrics(fmap('S_circularity'), :) = circularities;
     metrics(fmap('S_eccent'), :) = eccentricities;
     % Spatio-temporal metrics:
@@ -32,10 +32,10 @@ function [x, is_bad] = remove_redundant(...
     [~, metrics(idx_ST_123(1:5), :), ...
         metrics(idx_ST_123(6:10), :), ...
         metrics(idx_ST_123(11:15), :),] = ...
-        find_spurious_cells(S, T, M, pre_S_corr, pre_T_corr_in, ...
+        extract.helpers.find_spurious_cells(S, T, M, pre_S_corr, pre_T_corr_in, ...
         pre_T_corr_out, fov_size, avg_radius, use_gpu);
     metrics([fmap('ST_corr_1'), fmap('ST_corr_2'), fmap('ST_corr_3')], :) = ...
-        get_st_corr_metrics(M, S, T, fov_size, avg_radius);
+    extract.helpers.get_st_corr_metrics(M, S, T, fov_size, avg_radius);
     % Set NaN metrics to zero
     metrics(isnan(metrics(:))) = 0;
     
@@ -67,7 +67,7 @@ function [x, is_bad] = remove_redundant(...
 %     end
     
     % Obtain updated EXTRACT scores for all cells
-    [guess_good, guess_bad] = guess_labels_from_metrics(metrics);
+    [guess_good, guess_bad] = extract.helpers.guess_labels_from_metrics(metrics);
     guessed_labels = zeros(num_cells_all, 1);
     guessed_labels(guess_good) = 1;
     guessed_labels(guess_bad) = -1;
@@ -159,9 +159,9 @@ function [x, is_bad] = remove_redundant(...
     % removing the one with most neighbors for each connected graph
     % A2 is an optional adjacency matrix used as multiplciative constraint
         if exist('A2', 'var')
-            C = find_conncomp(M, corr_threshold, A2);
+            C = extract.helpers.find_conncomp(M, corr_threshold, A2);
         else
-            C = find_conncomp(M, corr_threshold);
+            C = extract.helpers.find_conncomp(M, corr_threshold);
         end
         is_excess = false(1, size(M,2));
         Conn = zeros(size(M, 2), 'single');

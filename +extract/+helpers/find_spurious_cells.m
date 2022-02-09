@@ -23,20 +23,20 @@ function [corr_score, scores_1, scores_2, scores_3] = ...
         end
         % Compute S_corr & S_surround
         pre_S_corr = S * 0;
-        T_noise_limit = sqrt(2)*3*get_trace_noise(T);
+        T_noise_limit = sqrt(2)*3*extract.helpers.get_trace_noise(T);
         T_zm = max(0, bsxfun(@minus, T, T_noise_limit));
-        T_zm = maybe_gpu(use_gpu, T_zm);
+        T_zm = extract.helpers.maybe_gpu(use_gpu, T_zm);
         for i = 1:num_chunks
-            indices = select_indices(n, num_chunks, i);
-            M_small = maybe_gpu(use_gpu, M(:, indices));
+            indices = extract.helpers.select_indices(n, num_chunks, i);
+            M_small = extract.helpers.maybe_gpu(use_gpu, M(:, indices));
             pre_S_corr = pre_S_corr + gather(M_small * T_zm(:, indices)');
             clear M_small;
         end
         clear T_zm;
 
         % Process S_corr
-        S_smooth = smooth_images(S, fov_size, GAUSS_FILTER_RADIUS_SMALL, use_gpu);
-        S_smooth = normalize_to_one(S_smooth);
+        S_smooth = extract.helpers.smooth_images(S, fov_size, GAUSS_FILTER_RADIUS_SMALL, use_gpu);
+        S_smooth = extract.helpers.normalize_to_one(S_smooth);
         Mask_surround = S_smooth > S_MASK_THRESHOLD;
         Mask_surround = single(Mask_surround);
         S_corr = pre_S_corr .* Mask_surround;
@@ -47,24 +47,24 @@ function [corr_score, scores_1, scores_2, scores_3] = ...
         corr_score = gather(sum(S_corr_norm .* S_norm, 1));
 
         % Process S_surround
-        S_smooth = smooth_images(S, fov_size, GAUSS_FILTER_RADIUS_LARGE, use_gpu);
-        S_smooth = normalize_to_one(S_smooth);
+        S_smooth = extract.helpers.smooth_images(S, fov_size, GAUSS_FILTER_RADIUS_LARGE, use_gpu);
+        S_smooth = extract.helpers.normalize_to_one(S_smooth);
         Mask_surround = S_smooth > S_MASK_THRESHOLD;
         Mask_surround = single(Mask_surround);
         S_surround = pre_S_corr .* Mask_surround;
         S_surround(S_surround <0) = 0;
         S_surround(Mask > 0) = 0;
-        S_surround = normalize_to_one(S_surround);
+        S_surround = extract.helpers.normalize_to_one(S_surround);
 
         pre_T_in = T;
         pre_T_out = T;
         % Compute T variants
         for i = 1:num_chunks
-            indices = select_indices(n, num_chunks, i);
-            M_small = maybe_gpu(use_gpu, M(:, indices));
+            indices = extract.helpers.select_indices(n, num_chunks, i);
+            M_small = extract.helpers.maybe_gpu(use_gpu, M(:, indices));
             % Project movie onto within-cell and out-of-cell regions
-            pre_T_in(:, indices) = gather(maybe_gpu(use_gpu, S)' * M_small);
-            pre_T_out(:, indices) = gather(maybe_gpu(use_gpu, S_surround)' * M_small);
+            pre_T_in(:, indices) = gather(extract.helpers.maybe_gpu(use_gpu, S)' * M_small);
+            pre_T_out(:, indices) = gather(extract.helpers.maybe_gpu(use_gpu, S_surround)' * M_small);
             clear M_small;
         end
     
@@ -108,7 +108,7 @@ function [corr_score, scores_1, scores_2, scores_3] = ...
         t = gather(T(i, :));
         t_mask = gather(T_mask(i, :));
         t_in_fluo = gather(T_in_fluo(i, :));
-        [active_frames, num_active_frames] = get_active_frames(t_mask>0, 0);
+        [active_frames, num_active_frames] = extract.helpers.get_active_frames(t_mask>0, 0);
         s1 = [];
         s2 = [];
         s3 = [];

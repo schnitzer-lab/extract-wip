@@ -29,7 +29,7 @@ function data = divisive_normalization(data, avg_radius, tol)
     end
     
     % Remove nans
-    data = replace_nans_with_zeros(data);
+    data = extract.helpers.replace_nans_with_zeros(data);
     
     % Work with single precision
     data = single(data);
@@ -40,10 +40,10 @@ function data = divisive_normalization(data, avg_radius, tol)
         use_gpu = false;
     end
     
-    smooth_data = spatial_bandpass(data, avg_radius, inf, 1/tol, use_gpu);
+    smooth_data = extract.helpers.spatial_bandpass(data, avg_radius, inf, 1/tol, use_gpu);
     data = data ./ smooth_data;
     
     % Send back to GPU if data was on GPU originally
-    data = maybe_gpu(is_input_gpuArray, data);
+    data = extract.helpers.maybe_gpu(is_input_gpuArray, data);
     
 end

@@ -12,9 +12,9 @@ function S_out = filter_images(S, fov_size, h, use_gpu)
     % Compute S_smooth
     S_out = S * 0;
     for i = 1:num_chunks
-        indices = select_indices(n, num_chunks, i);
+        indices = extract.helpers.select_indices(n, num_chunks, i);
         S_small = S(:, indices);
-        ims_in = maybe_gpu(use_gpu, reshape(S_small, fov_size(1), ...
+        ims_in = extract.helpers.maybe_gpu(use_gpu, reshape(S_small, fov_size(1), ...
             fov_size(2), length(indices)) );
         ims_out = gather(imfilter(ims_in, h));
         S_out(:, indices) = reshape(ims_out, m, length(indices));

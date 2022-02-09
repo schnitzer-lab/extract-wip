@@ -5,5 +5,5 @@ function mask = make_mask(S, fov_size, radius)
 % 3) binarizing the the smooth image
 % This function is gpu aware.
     filt = double(fspecial('disk', radius)>0); 
-    mask = filter_images(S, fov_size, filt, isa(S, 'gpuArray')) > 0;
+    mask = extract.helpers.filter_images(S, fov_size, filt, isa(S, 'gpuArray')) > 0;
 end

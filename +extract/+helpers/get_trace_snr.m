@@ -4,7 +4,7 @@ if nargin < 2 || isempty(do_medfilt)
     do_medfilt = true;
 end
 
-noise = estimate_noise_std(T) * sqrt(2);
+noise = extract.helpers.estimate_noise_std(T) * sqrt(2);
 if do_medfilt
     T = medfilt1(T, 3, [], 2);
 end

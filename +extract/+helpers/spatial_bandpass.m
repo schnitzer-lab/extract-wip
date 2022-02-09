@@ -62,7 +62,7 @@ lpf = 1 ./ (1 + (dist_matrix / f_upper).^(2 * n));
 hpf = 1 - 1 ./ (1 + (dist_matrix / f_lower).^(2 * n));
 bpf = single(lpf .* hpf);
 power_retained_spectrum = (sum(bpf(:).^2) / hf/wf);
-bpf = maybe_gpu(use_gpu, bpf);
+bpf = extract.helpers.maybe_gpu(use_gpu, bpf);
 
 % Chunk data in time so that we don't run out of memory
 if use_gpu
@@ -86,7 +86,7 @@ for i = 1:n_chunks
     idx_end = min(t, i * chunk_size);
     data_small = data(:, :, idx_begin:idx_end);
     % Send to GPU if use_gpu=true and data not already on GPU
-    data_small = maybe_gpu(use_gpu & ~is_input_gpuArray, data_small);
+    data_small = extract.helpers.maybe_gpu(use_gpu & ~is_input_gpuArray, data_small);
     
     % pad
     pad_each_h = floor((hf-h)/2);
