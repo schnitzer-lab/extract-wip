@@ -10,7 +10,7 @@ function [M_out, fov_occupation] = get_current_partition(...
 %   M_out: output 3-D movie matrix, sliced according to inputs
 %   fov_occupation: Binary 2-D array with 1's only for the current
 %   rectangular partitioned region
-    [h, w, t] = get_movie_size(M);
+    [h, w, t] = extract.helpers.get_movie_size(M);
     % npt is either < t or =t
     if isempty(npt) || npt > t
         npt = t;
@@ -37,7 +37,7 @@ function [M_out, fov_occupation] = get_current_partition(...
     % Make sure output is single
     M_out = single(M_out);
     % Replace nan pixels with zeros
-    M_out = replace_nans_with_zeros(M_out);
+    M_out = extract.helpers.replace_nans_with_zeros(M_out);
     % Trim zero edges (e.g. due to image registration ertifacts)
     try
         [M_out, nz_top, nz_bottom, nz_left, nz_right] = ...

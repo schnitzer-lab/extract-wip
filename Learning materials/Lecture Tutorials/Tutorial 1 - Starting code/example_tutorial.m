@@ -3,7 +3,7 @@
 clear;
 load('example.mat'); %contains a movie M, ground truth cell maps (S_ground) and traces (T_ground)
 config=[];
-config = get_defaults(config); %calls the defaults
+config = extract.get_defaults(config); %calls the defaults
 
 % Essentials, without these EXTRACT will give an error:
 config.avg_cell_radius=7; %Average cell radius is 7.
@@ -32,7 +32,7 @@ config.thresholds.T_min_snr=5;
 config.visualize_cellfinding=1;
 
 % Perform EXTRACTion:
-output=extractor(M,config);
+output=extract.solvers.extractor(M,config);
 
 %% Matching ground truth to EXTRACTed signals
 [h,w,k]=size(full(output.spatial_weights));

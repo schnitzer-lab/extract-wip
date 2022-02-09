@@ -2,7 +2,7 @@ function output = extractor(M, config)
 % Wrapper for EXTRACT for processing large movies
 
 %This warning is not required thanks to Hakan's implementation of the preprocessing module.
-%dispfun('Warning: If the input movie is in dfof form, please make sure to add 1 to the whole movie before running EXTRACT. \n',1)
+%extract.helpers.dispfun('Warning: If the input movie is in dfof form, please make sure to add 1 to the whole movie before running EXTRACT. \n',1)
 
 
 % Get start time
@@ -22,7 +22,7 @@ end
 %end
 
 % Update config with defaults
-config = get_defaults(config);
+config = extract.get_defaults(config);
 
 do_auto_partition=1;
 if isfield(config, 'num_partitions_x') && ...
@@ -41,7 +41,7 @@ end
 
 % Override the gpu flag if necessary + handle multi-gpu case
 if config.use_gpu && ~config.use_default_gpu
-    dispfun(sprintf('%s: Getting GPU information... \n', datestr(now)),...
+    extract.helpers.dispfun(sprintf('%s: Getting GPU information... \n', datestr(now)),...
         config.verbose ~= 0);
     max_mem = 0;
     min_mem = inf;
@@ -51,7 +51,7 @@ if config.use_gpu && ~config.use_default_gpu
     for idx_gpu = 1:c
         d = gpuDevice(idx_gpu);
         mem = d.AvailableMemory;
-        dispfun(sprintf(...
+        extract.helpers.dispfun(sprintf(...
             '\t \t \t GPU Device %d - %s: Available Memory: %.1f Gb\n', ...
             idx_gpu, d.Name, mem / 2^30), config.verbose ~= 0);
         min_mem = min(mem, min_mem);
@@ -69,7 +69,7 @@ if config.use_gpu && ~config.use_default_gpu
     else
         avail_mem = max_mem;
         gpuDevice(idx_max_mem);
-        dispfun(sprintf('\t \t \t - Selecting GPU device %d \n', ...
+        extract.helpers.dispfun(sprintf('\t \t \t - Selecting GPU device %d \n', ...
             idx_max_mem), config.verbose ~= 0);
     end
     if c == 0
@@ -89,7 +89,7 @@ if ~config.use_gpu && config.parallel_cpu == 1
                 num_workers + 1);
         else
             num_workers = config.num_parallel_cpu_workers;
-            dispfun(sprintf(...
+            extract.helpers.dispfun(sprintf(...
                 '\t \t \t Setting up a pool with %d CPU workers \n', ...
                 num_workers), config.verbose ~= 0);
         end
@@ -111,7 +111,7 @@ if num_workers > 1
     config.plot_loss = 0;
 end
 
-[h, w, ~] = get_movie_size(M);
+[h, w, ~] = extract.helpers.get_movie_size(M);
 
 npt = config.num_frames;
 % Determine the movie partitions
@@ -134,7 +134,7 @@ else
     w_adjusted = w / dss;
     npx = max(round(w_adjusted / PARTITION_SIDE_LEN), 1);
     npy = max(round(h_adjusted / PARTITION_SIDE_LEN), 1);
-    dispfun(sprintf(...
+    extract.helpers.dispfun(sprintf(...
         '%s: Signal extraction will run on %d partitions (%dx%d) \n', ...
         datestr(now), npx * npy, npy, npx), config.verbose ~= 0);
 end
@@ -169,19 +169,19 @@ T = {};
 % Divide movie into blocks and run EXTRACT
 % parfor (idx_partition = 1:num_partitions, num_workers)
 for idx_partition = num_partitions:-1:1
-    dispfun(sprintf('%s: Signal extraction on partition %d (of %d):\n', ...
+    extract.helpers.dispfun(sprintf('%s: Signal extraction on partition %d (of %d):\n', ...
         datestr(now), idx_partition, num_partitions), config.verbose ~= 0);
     
     tic;
     % Get current movie partition from full movie
-    [M_small, fov_occupation] = get_current_partition(...
+    [M_small, fov_occupation] = extract.helpers.get_current_partition(...
         M, npx, npy, npt, partition_overlap, idx_partition);
     io_time = io_time + toc;
 
     % Sometimes partitions contain no signal. Terminate in that case
     std_M = nanstd(M_small(:));
     if std_M < SIGNAL_LOWER_THRESHOLD
-        dispfun('\t \t \t No signal detected, terminating...\n', ...
+        extract.helpers.dispfun('\t \t \t No signal detected, terminating...\n', ...
             config.verbose ==2);
     end
     config_this = config;
@@ -198,8 +198,8 @@ for idx_partition = num_partitions:-1:1
         config_this.movie_mask = reshape(config_this.movie_mask, h_this, w_this);
     end
     % Run EXTRACT for current partition
-    [S_this, T_this, summary_this] = run_extract(M_small, config_this);
-    dispfun(sprintf('\t \t \t Count: %d cells.\n', ...
+    [S_this, T_this, summary_this] = extract.solvers.run_extract(M_small, config_this);
+    extract.helpers.dispfun(sprintf('\t \t \t Count: %d cells.\n', ...
         size(S_this, 2)), config.verbose ~= 0);
 
     % Un-trim the pixels
@@ -241,11 +241,11 @@ catch
 end
 
 
-dispfun(sprintf('%s: Total of %d cells are found.\n', ...
+extract.helpers.dispfun(sprintf('%s: Total of %d cells are found.\n', ...
     datestr(now),size(S,2)),config.verbose~=0);
 
 if config.remove_duplicate_cells
-    dispfun(sprintf('%s: Removing duplicate cells...\n', ...
+    extract.helpers.dispfun(sprintf('%s: Removing duplicate cells...\n', ...
     datestr(now), size(S, 2)), config.verbose ~= 0);
 
     overlap_idx = find(fov_occupation_total - 1);
@@ -263,7 +263,7 @@ if config.remove_duplicate_cells
         
     end
 
-    dispfun(sprintf(...
+    extract.helpers.dispfun(sprintf(...
         '%s: %d cells were retained after removing duplicates.\n', ...
         datestr(now), size(S, 2)), config.verbose ~=0);
 end

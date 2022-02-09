@@ -8,7 +8,6 @@ function [S, T, summary] = run_extract(M, config)
 %   T: Updated temporal components matrix
 %   summary: Matlab struct containing a useful summary of the algorithm
 
-
 ABS_TOL = 1e-6;
 
 M = single(M);
@@ -20,13 +19,13 @@ script_log = '';
 % Estimate time constant of a calcium event
 str = sprintf('\t \t \t Estimating the average time constant...\n');
 script_log = [script_log, str];
-dispfun(str, config.verbose ==2);
-tau = estimate_tau(reshape(M, fov_size(1) * fov_size(2), n));
+extract.helpers.dispfun(str, config.verbose ==2);
+tau = extract.helpers.estimate_tau(reshape(M, fov_size(1) * fov_size(2), n));
 % Quit if no activity is found
 if tau == 0
     str = sprintf('\t \t \t No signal detected, terminating...\n');
     script_log = [script_log, str];
-    dispfun(str, config.verbose ==2);
+    extract.helpers.dispfun(str, config.verbose ==2);
     S = [];
     T = [];
     summary.log = script_log;
@@ -43,7 +42,7 @@ end
 config.downsample_space_by = dss;
 if dss > 1
     M_before_dss = M;
-    M = downsample_space(M, dss);
+    M = extract.helpers.downsample_space(M, dss);
     [fov_size(1), fov_size(2), n] = size(M);
 end
 
@@ -52,8 +51,8 @@ config.avg_cell_radius = config.avg_cell_radius / dss;
 % Preprocess movie
 str = sprintf('\t \t \t Preprocessing movie...\n');
 script_log = [script_log, str];
-dispfun(str, config.verbose ==2);
-[M, config] = preprocess_movie(M, config);
+extract.helpers.dispfun(str, config.verbose ==2);
+[M, config] = extract.helpers.preprocess_movie(M, config);
 max_image = max(M, [], 3);
 clims_visualize = quantile(max_image(:), [config.visualize_cellfinding_min config.visualize_cellfinding_max]);
 
@@ -70,7 +69,7 @@ if dst > 1
     if config.reestimate_T_if_downsampled
         M_before_dst = reshape(M, fov_size(1) * fov_size(2), n);
     end
-    M = downsample_time(M, dst);
+    M = extract.helpers.downsample_time(M, dst);
     n_orig = n;
     [fov_size(1), fov_size(2), n] = size(M);
 end
@@ -85,8 +84,8 @@ if isempty(config.S_init)
     % Initialization using component-wise EXTRACT
     str = sprintf('\t \t \t Finding cells with component-wise EXTRACT...\n');
     script_log = [script_log, str];
-    dispfun(str, config.verbose ==2);
-    [S, T, init_summary] = cw_extract(M, config);
+    extract.helpers.dispfun(str, config.verbose ==2);
+    [S, T, init_summary] = extract.solvers.cw_extract(M, config);
     summary_image = init_summary.summary_im;
     if config.save_all_found
         summary.S_found = S;
@@ -95,7 +94,7 @@ if isempty(config.S_init)
 elseif isempty(config.T_init)
     str = sprintf('\t \t \t Initializing using provided images...\n');
     script_log = [script_log, str];
-    dispfun(str, config.verbose ==2);
+    extract.helpers.dispfun(str, config.verbose ==2);
     % Use given S -- ensure nonnegativity & correct scale
     if dss > 1
         [fov_y, fov_x, ~] = size(M_before_dss);
@@ -107,22 +106,22 @@ elseif isempty(config.T_init)
             ' don''t match the size of the FOV.']);
     end
     S = full(max(config.S_init, 0));
-    S = normalize_to_one(S);
+    S = extract.helpers.normalize_to_one(S);
     % Downsample if needed
     if dss > 1
         S = reshape(S, fov_y, fov_x, size(S, 2));
-        S = downsample_space(S, dss);
+        S = extract.helpers.downsample_space(S, dss);
         S = reshape(S, fov_size(1) * fov_size(2), size(S, 3));
     end
     % Do least-squares fit (truncated at 0) to find T
     % To do: Add a GPU implementation for least squares here!
     M = reshape(M, fov_size(1) * fov_size(2), n);
-    num_chunks = compute_lin_part_size(M, 0, 3);
-    T = maybe_gpu(0, zeros(size(S, 2), n));
+    num_chunks = extract.helpers.compute_lin_part_size(M, 0, 3);
+    T = extract.helpers.maybe_gpu(0, zeros(size(S, 2), n));
     S_inv = pinv(S);
     for k = 1:num_chunks
-        indices = select_indices(n, num_chunks, k);
-        M_small = maybe_gpu(0,M(:, indices));
+        indices = extract.helpers.select_indices(n, num_chunks, k);
+        M_small = extract.helpers.maybe_gpu(0,M(:, indices));
         T(:, indices) = S_inv * M_small;
     end
     clear S_inv M_small;
@@ -135,7 +134,7 @@ elseif isempty(config.T_init)
 else
     str = sprintf('\t \t \t Initializing using provided images and traces...\n');
     script_log = [script_log, str];
-    dispfun(str, config.verbose ==2);
+    extract.helpers.dispfun(str, config.verbose ==2);
     % Use given S -- ensure nonnegativity & correct scale
     if dss > 1
         [fov_y, fov_x, fov_z] = size(M_before_dss);
@@ -147,11 +146,11 @@ else
             ' don''t match the size of the FOV.']);
     end
     S = full(max(config.S_init, 0));
-    S = normalize_to_one(S);
+    S = extract.helpers.normalize_to_one(S);
     % Downsample if needed
     if dss > 1
         S = reshape(S, fov_y, fov_x, size(S, 2));
-        S = downsample_space(S, dss);
+        S = extract.helpers.downsample_space(S, dss);
         S = reshape(S, fov_size(1) * fov_size(2), size(S, 3));
     end
     if size(config.T_init, 2) ~= fov_z
@@ -172,7 +171,7 @@ end
 num_selected = ceil(size(S, 2)*0.1);
 % Use at least 5 cells (or the # of init components if fewer)
 num_selected = min(size(S, 2), max(5, num_selected));
-avg_radius_estimate = estimate_avg_radius(S(:, 1:num_selected), fov_size);
+avg_radius_estimate = extract.helpers.estimate_avg_radius(S(:, 1:num_selected), fov_size);
 % avg_radius is the mean of the estimate and user-provided radius
 avg_radius = (avg_radius_estimate + config.avg_cell_radius) / 2;
 config.avg_cell_radius = avg_radius;
@@ -192,10 +191,10 @@ ABS_TOL = 1e-6;
 if isempty(config.S_init) && strcmpi(config.cellfind_filter_type, 'none')
     noise_per_pixel = init_summary.noise_per_pixel;
 else
-    noise_per_pixel = estimate_noise_std(Mt, 1, config.use_gpu);
+    noise_per_pixel = extract.helpers.estimate_noise_std(Mt, 1, config.use_gpu);
     % Apply movie mask to noise if it exists
     if ~isempty(config.movie_mask)
-        noise_per_pixel = noise_per_pixel(config.movie_mask(:));
+        noise_per_pixel = extract.helpers.noise_per_pixel(config.movie_mask(:));
     end
 end
 noise_std = median(noise_per_pixel);
@@ -233,7 +232,7 @@ T_change = zeros(num_init_comp, config.max_iter, 'single');
 
 str = sprintf('\t \t \t Updating S and T with alternating estimation...\n');
 script_log = [script_log, str];
-dispfun(str, config.verbose ==2);
+extract.helpers.dispfun(str, config.verbose ==2);
 
 for iter = 1:config.max_iter
 	%---
@@ -243,14 +242,14 @@ for iter = 1:config.max_iter
     if isempty(T)
         str = sprintf('\t \t \t Zero cells, stopping. \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         break;
     end
     T_before = T;
     % compute l1 penalty constants
     if config.l1_penalty_factor > ABS_TOL
         % Penalize according to temporal overlap with neighbors
-        cor = get_comp_corr(S, T);
+        cor = extract.helpers.extract.debug.get_comp_corr(S, T);
         lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
             * config.l1_penalty_factor;
     else
@@ -259,12 +258,12 @@ for iter = 1:config.max_iter
 
     try
 
-    [T, loss, np_x, np_y, np_time] = solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
+    [T, loss, np_x, np_y, np_time] = extract.solvers.solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
             kappa, config.max_iter_T, config.TOL_sub, ...
             config.plot_loss, fp_solve_func, config.use_gpu, 1);
     catch
     
-    [T, loss, np_x, np_y, np_time] = solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
+    [T, loss, np_x, np_y, np_time] = extract.solvers.solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
             kappa, config.max_iter_T, config.TOL_sub, ...
             config.plot_loss, fp_solve_func, 0, 1);
     warning('GPU memory insufficient, will abord GPU utilization for this step.')
@@ -276,7 +275,7 @@ for iter = 1:config.max_iter
     % Compute T_smooth
     
     if config.smooth_T
-        T = smooth_traces(T, 1);
+        T = extract.helpers.smooth_traces(T, 1);
     end
     % Compute the mean absolute change from last iteration
     T_change(:, iter) =  sqrt(sum((T - T_before).^2, 2) ./ sum(T_before.^2, 2));
@@ -292,7 +291,7 @@ for iter = 1:config.max_iter
             iter, size(T, 1), np_x, np_y, np_time);
         last_size = length(str);
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
     end
 
     %---
@@ -302,15 +301,15 @@ for iter = 1:config.max_iter
     if isempty(T)
         str = sprintf('\t \t \t Zero cells, stopping. \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         break;
     end
     % Update spatial binary mask
     try
-    mask = make_mask(maybe_gpu(config.use_gpu, single(S_smooth > 0.1)), ...
+    mask = extract.helpers.make_mask(extract.helpers.maybe_gpu(config.use_gpu, single(S_smooth > 0.1)), ...
         fov_size, mask_extension_radius);
     catch
-    mask = make_mask(maybe_gpu(0, single(S_smooth > 0.1)), ...
+    mask = extract.helpers.make_mask(extract.helpers.maybe_gpu(0, single(S_smooth > 0.1)), ...
         fov_size, mask_extension_radius);
     end
     
@@ -335,9 +334,9 @@ for iter = 1:config.max_iter
 
     end
 
-    S_smooth = smooth_images(S, fov_size,...
+    S_smooth = extract.helpers.smooth_images(S, fov_size,...
         round(avg_radius / 2), config.use_gpu, true);
-    S_smooth = normalize_to_one(S_smooth);
+    S_smooth = extract.helpers.normalize_to_one(S_smooth);
     S_loss = [S_loss, loss];
     % Compute the mean absolute change from last iteration
     S_change(:, iter) = sqrt(sum((S - S_before).^2, 1)' ./ sum(S_before.^2, 1)');
@@ -353,23 +352,23 @@ for iter = 1:config.max_iter
             iter, size(S, 2), np_x, np_y);
         last_size = length(str);
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
     end
 
     if (config.hyperparameter_tuning_flag==1)
-    [classification] = classification_hyperparameters(...
+    [classification] = extract.debug.classification_hyperparameters(...
                 classification, S, S_smooth, T, M, S_surround, T_corr_in, T_corr_out, fov_size, round(avg_radius), ...
                 config.use_gpu);
     
 	str = sprintf('\t \t \t Terminating the cell-refinement for hyperparameter tuning \n');
-	dispfun(str, config.verbose ==2);
+	extract.helpers.dispfun(str, config.verbose ==2);
 	break
     end
 
     if( ismember(iter,config.num_iter_stop_quality_checks))
 
         if (iter == config.max_iter)
-            [classification] = classification_hyperparameters(...
+            [classification] = extract.debug.classification_hyperparameters(...
                 classification, S, S_smooth, T, M, S_surround, T_corr_in, T_corr_out, fov_size, round(avg_radius), ...
                 config.use_gpu);
         end
@@ -380,7 +379,7 @@ for iter = 1:config.max_iter
                 iter, size(T, 1));
             last_size = length(str);
             script_log = [script_log, str];
-            dispfun(str, config.verbose ==2);
+            extract.helpers.dispfun(str, config.verbose ==2);
         end
 
         if config.visualize_cellfinding
@@ -390,7 +389,7 @@ for iter = 1:config.max_iter
             
             imshow(max_image,clims_visualize)
             
-            plot_cells_overlay(reshape(gather(S),fov_size(1),fov_size(2),size(S,2)),[0,1,0],[])
+            extract.debug.plot_cells_overlay(reshape(gather(S),fov_size(1),fov_size(2),size(S,2)),[0,1,0],[])
             title(['Cell refinement step: ' num2str(iter) ' # Cells: ' num2str(size(T,1)) ' # Removed: 0'  ])
             drawnow;
         end
@@ -404,19 +403,19 @@ for iter = 1:config.max_iter
     %---
     if mod(iter, 1) == 0
         % Identify cells to be deleted
-        [classification, is_bad] = remove_redundant(...
+        [classification, is_bad] = extract.helpers.remove_redundant(...
                 classification, S, S_smooth, T, M, S_surround, T_corr_in, T_corr_out, fov_size, round(avg_radius), ...
                 config.use_gpu, config.thresholds);
 		
 
         % Merge duplicate cells (update images)
         if ~isempty(classification(end).merge.idx_merged)
-            [S, T] = update_merged_images(S, T, S_smooth, classification(end).merge);
+            [S, T] = extract.helpers.update_merged_images(S, T, S_smooth, classification(end).merge);
             % Recalculate smooth images for merged ones
-            S_smooth(:, classification(end).merge.idx_merged) = smooth_images(...
+            S_smooth(:, classification(end).merge.idx_merged) = extract.helpers.smooth_images(...
                 S(:, classification(end).merge.idx_merged), fov_size,...
                 round(avg_radius / 3), config.use_gpu, true);
-            S_smooth = normalize_to_one(S_smooth);
+            S_smooth = extract.helpers.normalize_to_one(S_smooth);
         end
          
         % Delete bad cells
@@ -431,14 +430,14 @@ for iter = 1:config.max_iter
                 iter, size(T, 1), sum(is_bad));
             last_size = length(str);
             script_log = [script_log, str];
-            dispfun(str, config.verbose ==2);
+            extract.helpers.dispfun(str, config.verbose ==2);
         end
         if config.visualize_cellfinding
             
             subplot(121)
             clf
             imshow(max_image,clims_visualize)
-            plot_cells_overlay(reshape(gather(S),fov_size(1),fov_size(2),size(S,2)),[0,1,0],[])
+            extract.debug.plot_cells_overlay(reshape(gather(S),fov_size(1),fov_size(2),size(S,2)),[0,1,0],[])
             title(['Cell refinement step: ' num2str(iter) ' # Cells: ' num2str(size(T,1)) ' # Removed: ' num2str(sum(is_bad)) ])
             drawnow;
         end
@@ -453,7 +452,7 @@ for iter = 1:config.max_iter
         (max(T_change(:, iter))< config.TOL_main)
         str = sprintf('\t \t \t Stopping due to early convergence. \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         break;
     end
 end
@@ -462,11 +461,11 @@ switch config.trace_output_option
     case 'raw'
         str = sprintf('\t \t \t Providing raw traces. \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         
         if config.l1_penalty_factor > ABS_TOL
             % Penalize according to temporal overlap with neighbors
-            cor = get_comp_corr(S, T);
+            cor = extract.debug.extract.debug.get_comp_corr(S, T);
             lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
                 * config.l1_penalty_factor;
         else
@@ -480,18 +479,18 @@ switch config.trace_output_option
     case 'baseline_adjusted'
         str = sprintf('\t \t \t Providing baseline adjusted traces. \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         
         if config.l1_penalty_factor > ABS_TOL
             % Penalize according to temporal overlap with neighbors
-            cor = get_comp_corr(S, T);
+            cor = extract.debug.get_comp_corr(S, T);
             lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
                 * config.l1_penalty_factor;
         else
             lambda = T(:, 1)' * 0;
         end
         
-        [T, ~, ~, ~, ~] = solve_T_robust(T, S, Mt, fov_size, avg_radius, lambda, ...
+        [T, ~, ~, ~, ~] = extract.solvers.solve_T_robust(T, S, Mt, fov_size, avg_radius, lambda, ...
             kappa, config.max_iter_T, config.TOL_sub, ...
             config.plot_loss, config.trace_quantile, config.use_gpu, 1);
 
@@ -500,18 +499,18 @@ switch config.trace_output_option
     case 'nonneg'
         str = sprintf('\t \t \t Providing non-negative traces. \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         if (config.max_iter == 0)
             if config.l1_penalty_factor > ABS_TOL
                 % Penalize according to temporal overlap with neighbors
-                cor = get_comp_corr(S, T);
+                cor = extract.debug.get_comp_corr(S, T);
                 lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
                     * config.l1_penalty_factor;
             else
                 lambda = T(:, 1)' * 0;
             end
 
-            [T, loss, np_x, np_y, np_time] = solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
+            [T, loss, np_x, np_y, np_time] = extract.solvers.solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
                 kappa, config.max_iter_T, config.TOL_sub, ...
                 config.plot_loss, fp_solve_func, config.use_gpu, 1);
 
@@ -526,7 +525,7 @@ if dst > 1
     if ~isempty(S)
         str = sprintf('\t \t \t Re-estimating T for all frames... \n');
         script_log = [script_log, str];
-        dispfun(str, config.verbose ==2);
+        extract.helpers.dispfun(str, config.verbose ==2);
         % Interpolate T to get an initial estimate for the full range
         Tt = interp1(round(linspace(1, n_orig, n)), T', 1:n_orig);
         % Tt comes out as row vector when # of components = 1 - Fix it:
@@ -534,7 +533,7 @@ if dst > 1
         if config.reestimate_T_if_downsampled
             % Update kappa according to dst
             kappa = kappa * sqrt(dst);
-            [T, ~, ~, ~, ~] = solve_T(Tt', S, M_before_dst, fov_size, avg_radius, Tt(1,:) * 0, ...
+            [T, ~, ~, ~, ~] = extract.solvers.solve_T(Tt', S, M_before_dst, fov_size, avg_radius, Tt(1,:) * 0, ...
                     kappa, config.max_iter_T, config.TOL_sub, ...
                     config.plot_loss, fp_solve_func, config.use_gpu, 0);
             if config.smooth_T
@@ -589,7 +588,7 @@ if dss > 1
                 'spline');
         end
         S = reshape(S_3d_full, fov_y * fov_x, num_components);
-        S = normalize_to_one(S);
+        S = extract.solvers.normalize_to_one(S);
         % Update bad cell images too
         if ~isempty(S_bad)
             num_bad_components = size(S_bad, 2);
@@ -600,23 +599,23 @@ if dss > 1
                     'spline');
             end
             S_bad = reshape(S_bad_3d_full, fov_y * fov_x, num_bad_components);
-            S_bad = normalize_to_one(S_bad);
+            S_bad = extract.solvers.normalize_to_one(S_bad);
         end
         clear S_3d_full S_bad_3d_full;
         % if asked to reconstruct full S, then re-estimate S for all pixels
         if config.reestimate_S_if_downsampled
             str = sprintf('\t \t \t Re-stimating S for all pixels... \n');
             script_log = [script_log, str];
-            dispfun(str, config.verbose ==2);
-            mask = make_mask(single(S > 0.4), [fov_y, fov_x], ...
+            extract.solvers.dispfun(str, config.verbose ==2);
+            mask = extract.solvers.make_mask(single(S > 0.4), [fov_y, fov_x], ...
                 mask_extension_radius * dss);
             M_before_dss = reshape(M_before_dss, fov_y * fov_x, n);
             % Update kappa according to dss
             kappa = kappa * dss;
-            [S, ~, ~, ~, ~] = solve_S(S, T, M_before_dss, mask, fov_size, avg_radius, ...
+            [S, ~, ~, ~, ~] = extract.solvers.solve_S(S, T, M_before_dss, mask, fov_size, avg_radius, ...
                 S(1, :) * 0, kappa, config.max_iter_S, config.TOL_sub, ...
                 config.plot_loss, @fp_solve_admm, config.use_gpu);
-            S = normalize_to_one(S);
+            S = extract.solvers.normalize_to_one(S);
         end
     end
 end
@@ -654,7 +653,7 @@ summary.config = config;
     % Internal functions
     %---
 
-    function C = get_comp_corr(S, T)
+    function C = extract.debug.get_comp_corr(S, T)
     % Compute a correlation metric based on spatial+temporal weights
         nk = size(S, 2);
         S_z = zscore(S, 1, 1) / sqrt(size(S, 1));
