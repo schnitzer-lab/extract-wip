@@ -81,9 +81,9 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
         baselines = extract.helpers.maybe_gpu(use_gpu, baselines);
 
         for idx_sample = 1:num_samples
-            idx_begin = max(1, extract.helpers.sampled_indices(idx_sample) - round(ss / 2));
+            idx_begin = max(1, sampled_indices(idx_sample) - round(ss / 2));
             idx_end = min(num_frames, ...
-                extract.helpers.sampled_indices(idx_sample) + round(ss / 2));
+                sampled_indices(idx_sample) + round(ss / 2));
             data = M(:, idx_begin:idx_end);
 
             % Baseline estimate is the most frequent bin in the histogram
@@ -122,7 +122,7 @@ function M = correct_baseline(M, tau, remove_background, use_gpu)
 
         % Interpolate the sample baseline points
         % Matlab accepts the array to be interpolated as column vectors
-        subt = interp1(extract.helpers.sampled_indices, ...
+        subt = interp1(sampled_indices, ...
             filt_out', (1:num_frames)', 'linear')';
         subt = extract.helpers.maybe_gpu(use_gpu, subt);
 %         std_subt = std(subt, 0, 2);

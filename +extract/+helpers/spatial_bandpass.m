@@ -71,7 +71,7 @@ if use_gpu
     avail_size = d.AvailableMemory / 4 / slack_factor;
 else
     slack_factor = 15;
-    f = get_free_mem;
+    f = extract.helpers.get_free_mem;
     avail_size = f / 4 / slack_factor; 
 end
 n_chunks = ceil(t * hf * wf / avail_size);

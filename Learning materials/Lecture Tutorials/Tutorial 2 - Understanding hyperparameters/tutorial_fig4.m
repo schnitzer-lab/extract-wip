@@ -1,10 +1,11 @@
 %% Welcome to the EXTRACT tutorial! Written by Fatih Dinc, 03/02/2021
 %perform cell extraction
 clear;
-M = single(hdf5read('Fig4_example.h5','/data'));
+M = single(hdf5read('/Volumes/DJ_Drew_SSD/EXTRACT/Fig4_example.h5', '/data'));
 %%
 config=[];
 config = extract.get_defaults(config); %calls the defaults
+config.use_gpu=false;
 
 % Essentials, without these EXTRACT will give an error:
 config.avg_cell_radius=6; 
