@@ -49,7 +49,7 @@ T_est=(S'*S)^(-1)*S'*M_res;
 % Since this movie does not contain unfound cells or neuropils, this will
 % be close to ground truth and EXTRACT outputs!
 %%
-pick=19;
+pick=20;
 plot(T_ex(idx_match(1,pick),:));
 hold on
 plot(T_ground(idx_match(2,pick),:))
