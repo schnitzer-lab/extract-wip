@@ -1,5 +1,5 @@
 function [T_out, l, np_x, np_y, np_time] = solve_T(T_in, S, M, fov_size, avg_radius, lambda, ...
-        kappa, max_iter, TOL, compute_loss, extract.helpers.est_func, use_gpu, is_M_transposed)
+        kappa, max_iter, TOL, compute_loss, est_func, use_gpu, is_M_transposed)
     
     GPU_SLACK_FACTOR = 4;
     CPU_SPACE_SIDELEN = 10 * 2 * avg_radius; % ~10 cells wide
@@ -53,7 +53,7 @@ function [T_out, l, np_x, np_y, np_time] = solve_T(T_in, S, M, fov_size, avg_rad
                     end
                     T_in_sub = T_in(idx_comp, idx_t);
                     % Solve regression
-                    [Tt_out_sub, l{end+1}] = extract.helpers.est_func(T_in_sub', S_sub', M_sub, ...
+                    [Tt_out_sub, l{end+1}] = est_func(T_in_sub', S_sub', M_sub, ...
                         [], lambda(idx_comp), kappa, max_iter, TOL, ...
                         compute_loss, use_gpu, transpose_M);
                     % Weight T components by their image powers

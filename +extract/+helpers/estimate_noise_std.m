@@ -27,7 +27,7 @@ if m > 1
         avail_size = d.AvailableMemory / 4 / slack_factor;
     else
         slack_factor = 15;
-        f = get_free_mem;
+        f = extract.helpers.get_free_mem;
         avail_size = f / 4 / slack_factor;
     end
 else
@@ -50,10 +50,10 @@ for i = 1:n_chunks
     % Send to GPU if use_gpu=true and data not already on GPU
     data_small = extract.helpers.maybe_gpu(use_gpu & ~is_input_gpuArray, data_small, time_axis);
     
-	noise_std(idx) = gather(extract.helpers.estimate_noise_std_func(data_small, time_axis));
+	noise_std(idx) = gather(estimate_noise_std_func(data_small, time_axis));
 end
 
-function noise_std = extract.helpers.estimate_noise_std_func(M, fft_axis)
+function noise_std = estimate_noise_std_func(M, fft_axis)
 % Estimate noise std of each row of a matrix
 
 cutoff_freq = 0.5;  % normalized to 1

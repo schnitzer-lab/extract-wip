@@ -211,9 +211,9 @@ classification = [];  % Updated during redundant cell check
 
 % Use adaptive regression routine if asked
 if config.adaptive_kappa == 2
-    fp_solve_func = @fp_solve_adaptive;
+    fp_solve_func = @extract.solvers.fp_solve_adaptive;
 else
-    fp_solve_func = @fp_solve_admm;
+    fp_solve_func = @extract.solvers.fp_solve_admm;
 end
 
 % Initialize variables
@@ -249,7 +249,7 @@ for iter = 1:config.max_iter
     % compute l1 penalty constants
     if config.l1_penalty_factor > ABS_TOL
         % Penalize according to temporal overlap with neighbors
-        cor = extract.helpers.extract.debug.get_comp_corr(S, T);
+        cor = get_comp_corr(S, T);
         lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
             * config.l1_penalty_factor;
     else
@@ -319,17 +319,17 @@ for iter = 1:config.max_iter
 
     try
 
-    [S, loss, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
+    [S, loss, np_x, np_y, T_corr_in, T_corr_out, S_surround] = extract.solvers.solve_S(...
         S, T, Mt, mask, fov_size, avg_radius, ...
             lambda, kappa, config.max_iter_S, config.TOL_sub, ...
-            config.plot_loss, @fp_solve_admm, config.use_gpu);
+            config.plot_loss, @extract.solvers.fp_solve_admm, config.use_gpu);
 
     catch
     
-    [S, loss, np_x, np_y, T_corr_in, T_corr_out, S_surround] = solve_S(...
+    [S, loss, np_x, np_y, T_corr_in, T_corr_out, S_surround] = extract.solvers.solve_S(...
         S, T, Mt, mask, fov_size, avg_radius, ...
             lambda, kappa, config.max_iter_S, config.TOL_sub, ...
-            config.plot_loss, @fp_solve_admm, 0);
+            config.plot_loss, @extract.solvers.fp_solve_admm, 0);
     warning('GPU memory insufficient, will abord GPU utilization for this step.')
 
     end
@@ -465,16 +465,16 @@ switch config.trace_output_option
         
         if config.l1_penalty_factor > ABS_TOL
             % Penalize according to temporal overlap with neighbors
-            cor = extract.debug.extract.debug.get_comp_corr(S, T);
+            cor = get_comp_corr(S, T);
             lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
                 * config.l1_penalty_factor;
         else
             lambda = T(:, 1)' * 0;
         end
         
-        [T, ~, ~, ~, ~] = solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
+        [T, ~, ~, ~, ~] = extract.solvers.solve_T(T, S, Mt, fov_size, avg_radius, lambda, ...
             kappa, config.max_iter_T, config.TOL_sub, ...
-            config.plot_loss, @fp_solve, config.use_gpu, 1);
+            config.plot_loss, @extract.solvers.fp_solve, config.use_gpu, 1);
 
     case 'baseline_adjusted'
         str = sprintf('\t \t \t Providing baseline adjusted traces. \n');
@@ -483,7 +483,7 @@ switch config.trace_output_option
         
         if config.l1_penalty_factor > ABS_TOL
             % Penalize according to temporal overlap with neighbors
-            cor = extract.debug.get_comp_corr(S, T);
+            cor = get_comp_corr(S, T);
             lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
                 * config.l1_penalty_factor;
         else
@@ -503,7 +503,7 @@ switch config.trace_output_option
         if (config.max_iter == 0)
             if config.l1_penalty_factor > ABS_TOL
                 % Penalize according to temporal overlap with neighbors
-                cor = extract.debug.get_comp_corr(S, T);
+                cor = get_comp_corr(S, T);
                 lambda = max(cor, [], 1) .* sum(S_smooth, 1) ...
                     * config.l1_penalty_factor;
             else
@@ -612,9 +612,9 @@ if dss > 1
             M_before_dss = reshape(M_before_dss, fov_y * fov_x, n);
             % Update kappa according to dss
             kappa = kappa * dss;
-            [S, ~, ~, ~, ~] = extract.solvers.solve_S(S, T, M_before_dss, mask, fov_size, avg_radius, ...
+            [S, ~, ~, ~, ~] = extract.solvers.extract.solvers.solve_S(S, T, M_before_dss, mask, fov_size, avg_radius, ...
                 S(1, :) * 0, kappa, config.max_iter_S, config.TOL_sub, ...
-                config.plot_loss, @fp_solve_admm, config.use_gpu);
+                config.plot_loss, @extract.solvers.fp_solve_admm, config.use_gpu);
             S = extract.solvers.normalize_to_one(S);
         end
     end
@@ -653,7 +653,7 @@ summary.config = config;
     % Internal functions
     %---
 
-    function C = extract.debug.get_comp_corr(S, T)
+    function C = get_comp_corr(S, T)
     % Compute a correlation metric based on spatial+temporal weights
         nk = size(S, 2);
         S_z = zscore(S, 1, 1) / sqrt(size(S, 1));

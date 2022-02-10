@@ -195,7 +195,7 @@ for i = 1:max_steps
 
     % Robust cell finding
     [s, t, t_corr, s_corr, s_change, t_change] = ...
-        alt_opt_single(Mt, s_2d_init, noise_std, max_num_pixels, use_gpu, kappa_t, kappa_s);
+        extract.solvers.alt_opt_single(Mt, s_2d_init, noise_std, max_num_pixels, use_gpu, kappa_t, kappa_s);
 
     S_change = [S_change; s_change];
     T_change = [T_change; t_change];
@@ -211,7 +211,7 @@ for i = 1:max_steps
     max_t = gather(max(t));
     metrics(i, 2) = max_t;
     is_attr_bad(i, 3) = max_t < max(abs_noise_threshold, min_magnitude);
-    trace_snr = max(medfilt1(gather(t))) / estimate_noise_std(t) / sqrt(2);
+    trace_snr = max(medfilt1(gather(t))) / extract.helpers.estimate_noise_std(t) / sqrt(2);
     % Check trace snr
     metrics(i, 3) = trace_snr;
     is_attr_bad(i, 4) = trace_snr < config.thresholds.T_min_snr;

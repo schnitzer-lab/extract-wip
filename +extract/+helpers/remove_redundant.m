@@ -1,7 +1,7 @@
 function [x, is_bad] = remove_redundant(...
         x, S, S_smooth, T, M, pre_S_corr, pre_T_corr_in, pre_T_corr_out, fov_size, avg_radius, use_gpu, thresholds)
     num_cells_this_iter = size(T, 1);
-    [fmap, ~] = get_quality_metric_map;
+    [fmap, ~] = extract.helpers.get_quality_metric_map;
     
     % Populate metrics
     metrics = zeros(length(fmap), num_cells_this_iter);

@@ -37,7 +37,7 @@ output=extract.solvers.extractor(M,config);
 %% Matching ground truth to EXTRACTed signals
 [h,w,k]=size(full(output.spatial_weights));
 S_ex=reshape(full(output.spatial_weights),h*w,k);
-idx_match = match_sets(S_ex, S_ground); %this is a very useful helper function, use this as you need!
+idx_match = extract.helpers.match_sets(S_ex, S_ground); %this is a very useful helper function, use this as you need!
 
 T_ex = output.temporal_weights';
 %% Perform multivariate linear regression for comparison
@@ -49,7 +49,7 @@ T_est=(S'*S)^(-1)*S'*M_res;
 % Since this movie does not contain unfound cells or neuropils, this will
 % be close to ground truth and EXTRACT outputs!
 %%
-pick=20;
+pick=19;
 plot(T_ex(idx_match(1,pick),:));
 hold on
 plot(T_ground(idx_match(2,pick),:))

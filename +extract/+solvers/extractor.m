@@ -250,7 +250,7 @@ if config.remove_duplicate_cells
 
     overlap_idx = find(fov_occupation_total - 1);
     if ~isempty(S)
-        idx_trash = find_duplicate_cells(S, T, overlap_idx);
+        idx_trash = extract.helpers.find_duplicate_cells(S, T, overlap_idx);
         S(:, idx_trash) = [];
         T(:, idx_trash) = [];
         try

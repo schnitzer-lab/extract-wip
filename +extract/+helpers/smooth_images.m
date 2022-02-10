@@ -9,7 +9,7 @@ end
     if ~use_medfilt
         h = fspecial('gaussian', [window_size, window_size],...
          filter_radius / 2.5);
-     S_out = filter_images(S, fov_size, h, use_gpu);
+     S_out = extract.helpers.filter_images(S, fov_size, h, use_gpu);
     else
         S_out = zeros(size(S), class(S));
         for i = 1:size(S, 2)

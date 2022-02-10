@@ -4,7 +4,7 @@ function [idx_k_good, idx_k_bad] = guess_labels_from_metrics(metrics)
     bad_limit = 0.3;
     good_limit = 0.7;
     % Guess good or bad cells from normalized spatiotemporal metrics.
-    [f_map, ~] = get_quality_metric_map;
+    [f_map, ~] = extract.helpers.get_quality_metric_map;
 
     idx_st2 = f_map('ST2_index_3');
     idx_st3 = f_map('ST3_index_3');
