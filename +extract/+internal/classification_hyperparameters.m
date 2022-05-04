@@ -6,7 +6,7 @@ function [x] = classification_hyperparameters( ...
     % Populate metrics
     metrics = zeros(length(fmap), num_cells_this_iter);
     % T metrics:
-    metrics(fmap('T_maxval'), :) = extract.internal. get_trace_snr(T);
+    metrics(fmap('T_maxval'), :) = extract.internal.get_trace_snr(T);
     metrics(fmap('T_corruption'), :) = extract.internal.temporal_corruption(T);
     T_smooth = medfilt1(T, 3, [], 2);
     T_norm = zscore(T_smooth, 1, 2) / sqrt(size(T_smooth, 2));
