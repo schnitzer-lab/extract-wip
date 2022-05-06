@@ -1,10 +1,11 @@
-M = single(hdf5read('jones.hdf5','/Data/Images'));
+M = single(h5read('jones.hdf5','/Data/Images'));
 
 
 % Decide on the partition number, and play with internal threshold parameters
 
 config=[];
 config = extract.get_defaults(config);
+%config.use_gpu=0;
 config.avg_cell_radius=7;
 config.num_partitions_x=1;
 config.num_partitions_y=1;
